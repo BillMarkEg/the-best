@@ -1,9 +1,19 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" dir="ltr">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>The Best · eFootball Champions</title>
+  <script>
+    /* Apply a saved Arabic choice before the first paint, so the page doesn't flip direction after loading. */
+    (function () {
+      try {
+        var q = new URLSearchParams(location.search).get("lang");
+        var l = q === "ar" || q === "en" ? q : localStorage.getItem("thebest.lang");
+        if (l === "ar") { document.documentElement.lang = "ar"; document.documentElement.dir = "rtl"; }
+      } catch (e) { /* storage blocked: stay in English */ }
+    })();
+  </script>
   <meta name="description" content="Champions, news and stats from our eFootball tournaments, plus the full PES history since PES 2012.">
   <meta name="theme-color" content="#050810">
   <meta property="og:title" content="The Best · eFootball Champions">
@@ -11,7 +21,7 @@
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23f6c453' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9H4.5a2.5 2.5 0 0 1 0-5H6M18 9h1.5a2.5 2.5 0 0 0 0-5H18M4 22h16M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22M18 2H6v7a6 6 0 0 0 12 0V2Z'/%3E%3C/svg%3E">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:ital,wght@0,600;0,700;0,800;1,700;1,800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:ital,wght@0,600;0,700;0,800;1,700;1,800&family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="assets/css/style.css">
   <script type="module" src="assets/js/app.js"></script>
 </head>
@@ -30,31 +40,37 @@
     <symbol id="i-image" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></symbol>
     <symbol id="i-flame" viewBox="0 0 24 24"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.07-2.14-.22-4.05 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.15.43-2.29 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></symbol>
     <symbol id="i-github" viewBox="0 0 24 24"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/></symbol>
+    <symbol id="i-globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></symbol>
   </svg>
 
-  <a class="skip-link" href="#main">Skip to content</a>
+  <a class="skip-link" href="#main" data-i18n="skip">Skip to content</a>
 
   <header class="site-header">
     <div class="container header-inner">
-      <a class="brand" href="#top" aria-label="The Best, home">
+      <a class="brand" href="#top" aria-label="The Best, home" data-i18n-attr="aria-label:brandHome">
         <span class="brand-mark"><svg class="icon"><use href="#i-trophy"/></svg></span>
-        <span class="brand-text"><strong>THE BEST</strong><small>eFootball champions</small></span>
+        <span class="brand-text"><strong data-i18n="brandName">THE BEST</strong><small data-i18n="brandSub">eFootball champions</small></span>
       </a>
-      <nav class="site-nav" aria-label="Sections">
-        <a href="#champions">Champions</a>
-        <a href="#news">News</a>
-        <a href="#stats">Stats</a>
-        <a href="#history">History</a>
+      <nav class="site-nav" aria-label="Sections" data-i18n-attr="aria-label:navSections">
+        <a href="#champions" data-i18n="navChampions">Champions</a>
+        <a href="#news" data-i18n="navNews">News</a>
+        <a href="#stats" data-i18n="navStats">Stats</a>
+        <a href="#history" data-i18n="navHistory">History</a>
       </nav>
-      <button class="btn btn-primary btn-sm" type="button" data-add aria-label="Add winner">
-        <svg class="icon"><use href="#i-plus"/></svg><span>Add winner</span>
-      </button>
+      <div class="header-actions">
+        <button class="btn btn-ghost btn-sm lang-btn" type="button" id="langBtn" lang="ar" aria-label="Switch to Arabic" data-i18n-attr="aria-label:langSwitchLabel;lang:langSwitchCode">
+          <svg class="icon"><use href="#i-globe"/></svg><span data-i18n="langSwitch">العربية</span>
+        </button>
+        <button class="btn btn-primary btn-sm" type="button" data-add aria-label="Add winner" data-i18n-attr="aria-label:addWinner">
+          <svg class="icon"><use href="#i-plus"/></svg><span data-i18n="addWinner">Add winner</span>
+        </button>
+      </div>
     </div>
   </header>
 
   <div class="pending-banner" id="pendingBanner" role="status" hidden>
     <span class="spinner" aria-hidden="true"></span>
-    <span>Publishing your latest change. GitHub Pages usually needs about a minute, then everyone sees it.</span>
+    <span data-i18n="pending">Publishing your latest change. GitHub Pages usually needs about a minute, then everyone sees it.</span>
   </div>
 
   <main id="main">
@@ -64,7 +80,7 @@
       <div class="hero-shade" aria-hidden="true"></div>
       <div class="container hero-inner">
         <div class="hero-text">
-          <p class="eyebrow"><span class="live-dot" aria-hidden="true"></span><span id="heroEyebrow">Latest champion</span></p>
+          <p class="eyebrow"><span class="live-dot" aria-hidden="true"></span><span id="heroEyebrow"></span></p>
           <h1 class="hero-name" id="heroName">Loading…</h1>
           <p class="hero-team" id="heroTeam"></p>
           <ul class="chips" id="heroChips"></ul>
@@ -79,21 +95,21 @@
     <section class="section" id="champions" aria-labelledby="champTitle">
       <div class="container">
         <header class="section-head">
-          <p class="kicker">eFootball era</p>
-          <h2 id="champTitle">Champions</h2>
-          <p class="lede">Every title since we switched from PES to eFootball. The full PES history is further down.</p>
+          <p class="kicker" data-i18n="champKicker">eFootball era</p>
+          <h2 id="champTitle" data-i18n="champTitle">Champions</h2>
+          <p class="lede" data-i18n="champLede">Every title since we switched from PES to eFootball. The full PES history is further down.</p>
         </header>
         <div class="champ-grid">
           <div class="card table-card">
             <div class="table-scroll">
               <table class="table" id="champTable">
-                <thead><tr><th class="num">#</th><th>Champion</th><th>Team</th><th>Tournament</th><th>Date</th><th>Star player</th><th class="admin-only"><span class="sr-only">Actions</span></th></tr></thead>
+                <thead><tr><th class="num">#</th><th data-i18n="thChampion">Champion</th><th data-i18n="thTeam">Team</th><th data-i18n="thTournament">Tournament</th><th data-i18n="thDate">Date</th><th data-i18n="thStar">Star player</th><th class="admin-only"><span class="sr-only" data-i18n="thActions">Actions</span></th></tr></thead>
                 <tbody></tbody>
               </table>
             </div>
           </div>
           <aside class="card race-card" aria-labelledby="raceTitle">
-            <h3 id="raceTitle">eFootball title race</h3>
+            <h3 id="raceTitle" data-i18n="raceTitle">eFootball title race</h3>
             <ol class="race" id="raceList"></ol>
           </aside>
         </div>
@@ -104,8 +120,8 @@
     <section class="section" id="news" aria-labelledby="newsTitle">
       <div class="container">
         <header class="section-head">
-          <p class="kicker">Latest first</p>
-          <h2 id="newsTitle">News</h2>
+          <p class="kicker" data-i18n="newsKicker">Latest first</p>
+          <h2 id="newsTitle" data-i18n="newsTitle">News</h2>
         </header>
         <div class="news-grid" id="newsGrid"></div>
       </div>
@@ -115,30 +131,30 @@
     <section class="section" id="stats" aria-labelledby="statsTitle">
       <div class="container">
         <header class="section-head">
-          <p class="kicker">All-time · PES + eFootball</p>
-          <h2 id="statsTitle">Stats</h2>
+          <p class="kicker" data-i18n="statsKicker">All-time · PES + eFootball</p>
+          <h2 id="statsTitle" data-i18n="statsTitle">Stats</h2>
         </header>
         <div class="kpis" id="kpis"></div>
         <div class="stats-grid">
           <article class="card chart-card" aria-labelledby="titlesTitle">
-            <h3 id="titlesTitle">Titles by player</h3>
-            <p class="card-sub">All tournaments since PES 2012</p>
+            <h3 id="titlesTitle" data-i18n="titlesTitle">Titles by player</h3>
+            <p class="card-sub" data-i18n="titlesSub">All tournaments since PES 2012</p>
             <div class="bars" id="titlesChart"></div>
           </article>
           <article class="card chart-card" aria-labelledby="clubsTitle">
-            <h3 id="clubsTitle">Favourite clubs</h3>
-            <p class="card-sub">The teams each player won the most with</p>
+            <h3 id="clubsTitle" data-i18n="clubsTitle">Favourite clubs</h3>
+            <p class="card-sub" data-i18n="clubsSub">The teams each player won the most with</p>
             <div class="clubs" id="clubsList"></div>
           </article>
           <article class="card chart-card span-2" aria-labelledby="seasonsTitle">
             <div class="card-head">
               <div>
-                <h3 id="seasonsTitle">Who won each tournament</h3>
-                <p class="card-sub">Share of titles per tournament, newest first</p>
+                <h3 id="seasonsTitle" data-i18n="seasonsTitle">Who won each tournament</h3>
+                <p class="card-sub" data-i18n="seasonsSub">Share of titles per tournament, newest first</p>
               </div>
               <button class="btn btn-ghost btn-sm" type="button" id="seasonsView" aria-pressed="false">Show as table</button>
             </div>
-            <ul class="legend" id="seasonsLegend" aria-label="Players"></ul>
+            <ul class="legend" id="seasonsLegend" aria-label="Players" data-i18n-attr="aria-label:legendPlayers"></ul>
             <div id="seasonsChart"></div>
             <button class="btn btn-ghost btn-sm more-btn" type="button" id="seasonsMore"></button>
           </article>
@@ -150,20 +166,20 @@
     <section class="section" id="history" aria-labelledby="historyTitle">
       <div class="container">
         <header class="section-head">
-          <p class="kicker">PES 2012 → today</p>
-          <h2 id="historyTitle">All-time winners</h2>
-          <p class="lede">Every title ever recorded: the PES sheet plus the eFootball era.</p>
+          <p class="kicker" data-i18n="historyKicker">PES 2012 → today</p>
+          <h2 id="historyTitle" data-i18n="historyTitle">All-time winners</h2>
+          <p class="lede" data-i18n="historyLede">Every title ever recorded: the PES sheet plus the eFootball era.</p>
         </header>
         <div class="filters" role="search">
-          <label class="field-inline"><span>Player</span><select id="fPlayer"><option value="">All players</option></select></label>
-          <label class="field-inline"><span>Game</span><select id="fGame"><option value="">PES + eFootball</option><option value="PES">PES only</option><option value="eFootball">eFootball only</option></select></label>
-          <label class="field-inline grow"><span>Search</span><input id="fSearch" type="search" placeholder="Team or tournament…" autocomplete="off"></label>
+          <label class="field-inline"><span data-i18n="fPlayer">Player</span><select id="fPlayer"><option value="">All players</option></select></label>
+          <label class="field-inline"><span data-i18n="fGame">Game</span><select id="fGame"><option value="" data-i18n="fGameAll">PES + eFootball</option><option value="PES" data-i18n="fGamePes">PES only</option><option value="eFootball" data-i18n="fGameEf">eFootball only</option></select></label>
+          <label class="field-inline grow"><span data-i18n="fSearch">Search</span><input id="fSearch" type="search" dir="auto" placeholder="Team or tournament…" data-i18n-attr="placeholder:fSearchPh" autocomplete="off"></label>
           <p class="filter-count" id="historyCount" aria-live="polite"></p>
         </div>
         <div class="card table-card">
           <div class="table-scroll">
             <table class="table" id="historyTable">
-              <thead><tr><th class="num">#</th><th>Tournament</th><th>Champion</th><th>Team</th><th>Players</th><th>Game</th></tr></thead>
+              <thead><tr><th class="num">#</th><th data-i18n="thTournament">Tournament</th><th data-i18n="thChampion">Champion</th><th data-i18n="thTeam">Team</th><th data-i18n="thPlayers">Players</th><th data-i18n="thGame">Game</th></tr></thead>
               <tbody></tbody>
             </table>
           </div>
@@ -175,11 +191,11 @@
 
   <footer class="site-footer">
     <div class="container footer-inner">
-      <p><strong>THE BEST</strong> · Results from <code>our_tournments.xlsx</code> (PES sheet + eFootball sheet).</p>
-      <p class="credits" id="credits">
+      <p data-i18n-html="footerData"><strong>THE BEST</strong> · Results from <code>our_tournments.xlsx</code> (PES sheet + eFootball sheet).</p>
+      <p class="credits" id="credits" data-i18n-html="footerCredits">
         Background: <a href="https://commons.wikimedia.org/wiki/File:Camp_Nou_Barcelona_Chelsea_14-03-2018.jpg" target="_blank" rel="noopener">Camp Nou, Barcelona v Chelsea 2018</a> by Azulino, <a href="https://creativecommons.org/licenses/by-sa/4.0" target="_blank" rel="noopener">CC BY-SA 4.0</a>. News photos are credited on each story.
       </p>
-      <p class="fineprint">eFootball™ and PES are trademarks of Konami. This is a private fan site and isn't affiliated with Konami.</p>
+      <p class="fineprint" data-i18n="footerFine">eFootball™ and PES are trademarks of Konami. This is a private fan site and isn't affiliated with Konami.</p>
     </div>
   </footer>
 
@@ -188,63 +204,74 @@
     <form class="dialog-inner" id="winnerForm" novalidate>
       <header class="dialog-head">
         <h2 id="dialogTitle">Add a new winner</h2>
-        <button class="icon-btn" type="button" data-close aria-label="Close"><svg class="icon"><use href="#i-x"/></svg></button>
+        <button class="icon-btn" type="button" data-close aria-label="Close" data-i18n-attr="aria-label:close"><svg class="icon"><use href="#i-x"/></svg></button>
       </header>
       <div class="tabs" role="tablist">
-        <button type="button" role="tab" class="tab" data-tab="winner" aria-selected="true">Winner</button>
-        <button type="button" role="tab" class="tab" data-tab="github" aria-selected="false"><svg class="icon"><use href="#i-github"/></svg> GitHub connection <span class="conn-dot" id="connDot"></span></button>
+        <button type="button" role="tab" class="tab" data-tab="winner" aria-selected="true"><span data-i18n="tabWinner">Winner</span></button>
+        <button type="button" role="tab" class="tab" data-tab="github" aria-selected="false"><svg class="icon"><use href="#i-github"/></svg> <span data-i18n="tabGithub">GitHub connection</span> <span class="conn-dot" id="connDot"></span></button>
       </div>
 
       <div class="dialog-body">
         <section class="panel" data-panel="winner" role="tabpanel">
           <div class="form-grid">
-            <label class="field"><span>Champion <b aria-hidden="true">*</b></span><input name="player" list="playerList" required autocomplete="off" placeholder="e.g. Legend Master"></label>
-            <label class="field"><span>Team <b aria-hidden="true">*</b></span><input name="team" required autocomplete="off" placeholder="e.g. Suzhou Dongwu F.C."></label>
-            <label class="field"><span>Tournament</span><input name="event" autocomplete="off" placeholder="eFootball" list="eventList"></label>
-            <label class="field"><span>Date</span><input name="date" type="date"></label>
-            <label class="field"><span>Runner-up</span><input name="runnerUp" list="playerList" autocomplete="off" placeholder="Who lost the final"></label>
-            <label class="field"><span>Final score</span><input name="score" autocomplete="off" placeholder="e.g. 3-1"></label>
-            <label class="field"><span>Star player</span><input name="star" autocomplete="off" placeholder="e.g. Luis Suárez"></label>
-            <label class="field"><span>Players in the tournament</span><input name="competitors" list="compList" autocomplete="off" placeholder="all"></label>
-            <label class="field span-2"><span>Headline <small>(optional, written for you if empty)</small></span><input name="headline" autocomplete="off" maxlength="120"></label>
-            <label class="field span-2"><span>Story <small>(optional)</small></span><textarea name="story" rows="3" maxlength="1200" placeholder="How did the final go?"></textarea></label>
+            <label class="field"><span><span data-i18n="lPlayer">Champion</span> <b aria-hidden="true">*</b></span><input name="player" list="playerList" required dir="auto" autocomplete="off" placeholder="e.g. Legend Master" data-i18n-attr="placeholder:phPlayer"></label>
+            <label class="field"><span><span data-i18n="lTeam">Team</span> <b aria-hidden="true">*</b></span><input name="team" required dir="auto" autocomplete="off" placeholder="e.g. Suzhou Dongwu F.C." data-i18n-attr="placeholder:phTeam"></label>
+            <label class="field"><span data-i18n="lEvent">Tournament</span><input name="event" dir="auto" autocomplete="off" placeholder="eFootball" list="eventList"></label>
+            <label class="field"><span data-i18n="lDate">Date</span><input name="date" type="date"></label>
+            <label class="field"><span data-i18n="lRunnerUp">Runner-up</span><input name="runnerUp" list="playerList" dir="auto" autocomplete="off" placeholder="Who lost the final" data-i18n-attr="placeholder:phRunnerUp"></label>
+            <label class="field"><span data-i18n="lScore">Final score</span><input name="score" dir="ltr" autocomplete="off" placeholder="e.g. 3-1" data-i18n-attr="placeholder:phScore"></label>
+            <label class="field"><span data-i18n="lStar">Star player</span><input name="star" dir="auto" autocomplete="off" placeholder="e.g. Luis Suárez" data-i18n-attr="placeholder:phStar"></label>
+            <label class="field"><span data-i18n="lComp">Players in the tournament</span><input name="competitors" list="compList" dir="auto" autocomplete="off" placeholder="all"></label>
+            <label class="field span-2"><span><span data-i18n="lHeadline">Headline</span> <small data-i18n="lHeadlineHint">(optional, written for you if empty)</small></span><input name="headline" dir="auto" autocomplete="off" maxlength="120"></label>
+            <label class="field span-2"><span><span data-i18n="lStory">Story</span> <small data-i18n="optional">(optional)</small></span><textarea name="story" dir="auto" rows="3" maxlength="1200" placeholder="How did the final go?" data-i18n-attr="placeholder:phStory"></textarea></label>
+
+            <details class="ar-fields span-2">
+              <summary><span data-i18n="arSection">Arabic version</span> <small data-i18n="arSectionHint">(optional, shown when the site is in Arabic)</small></summary>
+              <div class="form-grid">
+                <label class="field"><span data-i18n="lTeamAr">Team in Arabic</span><input name="teamAr" dir="rtl" lang="ar" autocomplete="off"></label>
+                <label class="field"><span data-i18n="lEventAr">Tournament in Arabic</span><input name="eventAr" dir="rtl" lang="ar" autocomplete="off"></label>
+                <label class="field"><span data-i18n="lStarAr">Star player in Arabic</span><input name="starAr" dir="rtl" lang="ar" autocomplete="off"></label>
+                <label class="field span-2"><span data-i18n="lHeadlineAr">Headline in Arabic</span><input name="headlineAr" dir="rtl" lang="ar" autocomplete="off" maxlength="120"></label>
+                <label class="field span-2"><span data-i18n="lStoryAr">Story in Arabic</span><textarea name="storyAr" dir="rtl" lang="ar" rows="3" maxlength="1200"></textarea></label>
+              </div>
+            </details>
 
             <div class="field upload span-2">
-              <span>Win image <small>(screenshot or photo of the win)</small></span>
+              <span><span data-i18n="lWinImg">Win image</span> <small data-i18n="lWinImgHint">(screenshot or photo of the win)</small></span>
               <div class="upload-row">
                 <div class="upload-preview" id="winPreview"><svg class="icon"><use href="#i-image"/></svg></div>
                 <div class="upload-actions">
                   <input type="file" name="winFile" id="winFile" accept="image/*">
-                  <label class="check" hidden id="winRemoveWrap"><input type="checkbox" name="removeWin"> Remove current image</label>
+                  <label class="check" hidden id="winRemoveWrap"><input type="checkbox" name="removeWin"> <span data-i18n="lRemoveImg">Remove current image</span></label>
                 </div>
               </div>
             </div>
             <div class="field upload span-2">
-              <span>Background photo <small>(shown behind the win image, e.g. your star player)</small></span>
+              <span><span data-i18n="lCover">Background photo</span> <small data-i18n="lCoverHint">(shown behind the win image, e.g. your star player)</small></span>
               <div class="upload-row">
                 <div class="upload-preview" id="coverPreview"><svg class="icon"><use href="#i-image"/></svg></div>
                 <div class="upload-actions">
                   <input type="file" name="coverFile" id="coverFile" accept="image/*">
-                  <label class="check" hidden id="coverRemoveWrap"><input type="checkbox" name="removeCover"> Remove current photo</label>
+                  <label class="check" hidden id="coverRemoveWrap"><input type="checkbox" name="removeCover"> <span data-i18n="lRemoveCover">Remove current photo</span></label>
                 </div>
               </div>
             </div>
-            <label class="field span-2"><span>Background photo credit <small>(optional, e.g. photographer and license)</small></span><input name="coverCredit" autocomplete="off"></label>
+            <label class="field span-2"><span><span data-i18n="lCoverCredit">Background photo credit</span> <small data-i18n="lCoverCreditHint">(optional, e.g. photographer and license)</small></span><input name="coverCredit" dir="auto" autocomplete="off"></label>
           </div>
-          <p class="hint">Images are resized on your device before upload, which also strips location data from phone photos.</p>
+          <p class="hint" data-i18n="imgHint">Images are resized on your device before upload, which also strips location data from phone photos.</p>
         </section>
 
         <section class="panel" data-panel="github" role="tabpanel" hidden>
-          <p class="hint">Winners are saved straight into the site's GitHub repository, so everyone sees them about a minute later. Connect once per device; your token stays in this browser only.</p>
+          <p class="hint" data-i18n="ghHint">Winners are saved straight into the site's GitHub repository, so everyone sees them about a minute later. Connect once per device; your token stays in this browser only.</p>
           <div class="form-grid">
-            <label class="field"><span>GitHub user / org</span><input name="ghOwner" autocomplete="off" spellcheck="false"></label>
-            <label class="field"><span>Repository</span><input name="ghRepo" autocomplete="off" spellcheck="false"></label>
-            <label class="field"><span>Branch</span><input name="ghBranch" autocomplete="off" spellcheck="false" placeholder="main"></label>
-            <label class="field"><span>Access token</span><input name="ghToken" type="password" autocomplete="off" spellcheck="false" placeholder="github_pat_…"></label>
+            <label class="field"><span data-i18n="lOwner">GitHub user / org</span><input name="ghOwner" dir="ltr" autocomplete="off" spellcheck="false"></label>
+            <label class="field"><span data-i18n="lRepo">Repository</span><input name="ghRepo" dir="ltr" autocomplete="off" spellcheck="false"></label>
+            <label class="field"><span data-i18n="lBranch">Branch</span><input name="ghBranch" dir="ltr" autocomplete="off" spellcheck="false" placeholder="main"></label>
+            <label class="field"><span data-i18n="lToken">Access token</span><input name="ghToken" type="password" dir="ltr" autocomplete="off" spellcheck="false" placeholder="github_pat_…"></label>
           </div>
           <details class="howto">
-            <summary>How do I get a token?</summary>
-            <ol>
+            <summary data-i18n="howtoSummary">How do I get a token?</summary>
+            <ol data-i18n-html="howtoSteps">
               <li>Open <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">GitHub → Fine-grained tokens → Generate new token</a>.</li>
               <li>Repository access: <b>Only select repositories</b> → pick this site's repository.</li>
               <li>Permissions → Repository permissions → <b>Contents: Read and write</b>.</li>
@@ -252,15 +279,15 @@
             </ol>
           </details>
           <div class="row-actions">
-            <button class="btn btn-ghost btn-sm" type="button" id="ghTest">Save &amp; test connection</button>
-            <button class="btn btn-ghost btn-sm danger" type="button" id="ghForget">Forget token</button>
+            <button class="btn btn-ghost btn-sm" type="button" id="ghTest" data-i18n="btnTest">Save &amp; test connection</button>
+            <button class="btn btn-ghost btn-sm danger" type="button" id="ghForget" data-i18n="btnForget">Forget token</button>
           </div>
         </section>
       </div>
 
       <footer class="dialog-foot">
         <p class="form-status" id="formStatus" role="status" aria-live="polite"></p>
-        <button class="btn btn-ghost" type="button" data-close>Cancel</button>
+        <button class="btn btn-ghost" type="button" data-close data-i18n="btnCancel">Cancel</button>
         <button class="btn btn-primary" type="submit" id="publishBtn"><svg class="icon"><use href="#i-trophy"/></svg><span>Publish</span></button>
       </footer>
     </form>

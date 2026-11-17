@@ -9,6 +9,8 @@ A small static website for our tournaments: the latest champion first, the eFoot
 | `index.html`, `assets/` | The website (HTML, CSS, JavaScript, images) |
 | `data/efootball.json` | eFootball-era winners. The **Add winner** button on the site edits this file. |
 | `data/pes_history.json` | PES-era winners, generated from the `tournments` sheet |
+| `data/names_ar.json` | Arabic names for teams, tournaments and (optionally) players |
+| `assets/js/i18n.js` | All English and Arabic interface text |
 | `our_tournments.xlsx` | The original sheet (`tournments`, PES 2012 to PES 2021) plus the new `eFootball` sheet |
 | `tools/sync_excel.py` | Keeps the workbook and the website data in sync |
 
@@ -37,6 +39,15 @@ The site commits the images and `data/efootball.json` to the repository; GitHub 
 When connected, each eFootball winner also shows **edit** and **delete** buttons, for example to add a win image later.
 
 Images are resized to 1600px on your device before upload, which also strips location data from phone photos.
+
+## Arabic
+
+- The **العربية** button in the header switches the whole site to Arabic, right to left. Each visitor's choice is remembered.
+- Share `https://billmarkeg.github.io/the-best/?lang=ar` to open the site straight in Arabic.
+- Team and tournament names come from `data/names_ar.json`. Add or fix names there; anything not listed is shown as written.
+  Player nicknames stay as written unless you add them under `"players"`.
+- When adding a winner, the optional **Arabic version** section takes the Arabic team, tournament and star names plus an Arabic headline and story.
+  Leave it empty and the Arabic headline and story are written for you.
 
 ## Keep the Excel file up to date
 

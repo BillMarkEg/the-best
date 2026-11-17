@@ -5,7 +5,8 @@
    GitHub Pages then redeploys the site, usually within a minute.
    The access token is stored in this browser only (localStorage). */
 
-import { state, applyEfootball, toast, teamName, readGithubConfig, registerLocalImage, renderAll } from "./app.js";
+import { state, applyEfootball, toast, readGithubConfig, registerLocalImage, renderAll, showPlayer, showTeam } from "./app.js";
+import { t } from "./i18n.js";
 
 const LS_GITHUB = "thebest.github";
 const DATA_PATH = "data/efootball.json";
@@ -24,7 +25,7 @@ export function initAdmin() {
   dialog.querySelectorAll("[data-close]").forEach((b) => b.addEventListener("click", () => closeDialog()));
   dialog.addEventListener("cancel", (e) => { if (busy) e.preventDefault(); });
   dialog.addEventListener("close", resetDialog);
-  dialog.querySelectorAll(".tab").forEach((t) => t.addEventListener("click", () => showTab(t.dataset.tab)));
+  dialog.querySelectorAll(".tab").forEach((tab) => tab.addEventListener("click", () => showTab(tab.dataset.tab)));
   $("#winFile").addEventListener("change", () => previewFile("winFile", "winPreview"));
   $("#coverFile").addEventListener("change", () => previewFile("coverFile", "coverPreview"));
   $("#ghTest").addEventListener("click", testConnection);
@@ -52,7 +53,7 @@ function onDocumentClick(e) {
 }
 
 function showTab(name) {
-  dialog.querySelectorAll(".tab").forEach((t) => t.setAttribute("aria-selected", String(t.dataset.tab === name)));
+  dialog.querySelectorAll(".tab").forEach((tab) => tab.setAttribute("aria-selected", String(tab.dataset.tab === name)));
   dialog.querySelectorAll(".panel").forEach((p) => { p.hidden = p.dataset.panel !== name; });
 }
 
@@ -96,23 +97,26 @@ function previewFile(inputId, previewId) {
 }
 
 const FIELDS = ["player", "team", "event", "date", "runnerUp", "score", "star", "competitors", "headline", "story", "coverCredit"];
+const AR_FIELDS = ["teamAr", "eventAr", "starAr", "headlineAr", "storyAr"];
 
 function openEditor(winner) {
   editing = winner;
   form.reset();
   form.querySelectorAll(".field.invalid").forEach((f) => f.classList.remove("invalid"));
-  $("#dialogTitle").textContent = winner ? "Edit winner" : "Add a new winner";
-  $("#publishBtn span").textContent = winner ? "Save changes" : "Publish";
+  $("#dialogTitle").textContent = t(winner ? "dlgEdit" : "dlgAdd");
+  $("#publishBtn span").textContent = t(winner ? "btnSave" : "btnPublish");
   const f = form.elements;
-  if (winner) FIELDS.forEach((k) => { f[k].value = winner[k] || ""; });
+  if (winner) [...FIELDS, ...AR_FIELDS].forEach((k) => { f[k].value = winner[k] || ""; });
   else { f.event.value = "eFootball"; f.date.value = today(); }
+  form.querySelector(".ar-fields").open = Boolean(winner && AR_FIELDS.some((k) => winner[k]));
   setPreview("winPreview", winner?.winImage);
   setPreview("coverPreview", winner?.cover);
   $("#winRemoveWrap").hidden = !winner?.winImage;
   $("#coverRemoveWrap").hidden = !winner?.cover;
   fillGithubFields();
   showTab("winner");
-  setStatus(readGithubConfig().token ? "" : "Not connected to GitHub on this device yet. You'll be asked when you publish.", readGithubConfig().token ? "" : "warn");
+  const connected = Boolean(readGithubConfig().token);
+  setStatus(connected ? "" : t("stNotConnected"), connected ? "" : "warn");
   dialog.showModal();
   setTimeout(() => f.player.focus(), 30);
 }
@@ -135,7 +139,7 @@ function fillGithubFields() {
   f.ghRepo.value = cfg.repo;
   f.ghBranch.value = cfg.branch;
   f.ghToken.value = "";
-  f.ghToken.placeholder = cfg.token ? "Saved on this device ✓ (paste to replace)" : "github_pat_…";
+  f.ghToken.placeholder = cfg.token ? t("tokenSaved") : "github_pat_…";
 }
 
 function saveGithubFields() {
@@ -154,11 +158,11 @@ async function testConnection() {
   const cfg = saveGithubFields();
   fillGithubFields();
   if (!cfg.owner || !cfg.repo || !cfg.token) {
-    setStatus("Fill in the GitHub user/org, repository and token.", "error");
+    setStatus(t("stFillGh"), "error");
     return;
   }
   setBusy(true);
-  setStatus("Checking the connection…");
+  setStatus(t("stChecking"));
   try {
     const repo = await gh(cfg, "GET", "");
     await gh(cfg, "GET", `/git/ref/heads/${branchPath(cfg)}`);
@@ -167,10 +171,10 @@ async function testConnection() {
     refreshAdminMode();
     renderAll();
     if (canWrite) {
-      setStatus(`Connected to ${repo.full_name} ✓ You can publish winners now.`, "ok");
+      setStatus(t("stConnected", { repo: repo.full_name }), "ok");
       setTimeout(() => { if (dialog.open) showTab("winner"); }, 900);
     } else {
-      setStatus(`Connected, but this account can't push to ${repo.full_name}.`, "error");
+      setStatus(t("stNoPush", { repo: repo.full_name }), "error");
     }
   } catch (err) {
     setStatus(err.message, "error");
@@ -185,7 +189,7 @@ function forgetToken() {
   fillGithubFields();
   refreshAdminMode();
   renderAll();
-  setStatus("Token removed from this device.", "ok");
+  setStatus(t("stForgot"), "ok");
 }
 
 const branchPath = (cfg) => cfg.branch.split("/").map(encodeURIComponent).join("/");
@@ -206,19 +210,14 @@ async function gh(cfg, method, path, body) {
       body: body ? JSON.stringify(body) : undefined,
     });
   } catch {
-    throw new Error("Couldn't reach GitHub. Check your internet connection and try again.");
+    throw new Error(t("errNetwork"));
   }
   if (res.ok) return res.status === 204 ? null : res.json();
   let detail = "";
   try { detail = (await res.json()).message || ""; } catch { /* no body */ }
-  const reason = {
-    401: "GitHub rejected the token (expired or mistyped?).",
-    403: "This token can't write to the repository. It needs “Contents: Read and write”.",
-    404: "Repository, branch or data file not found. Check the GitHub connection settings.",
-    409: "GitHub reported a conflict. Please try again.",
-    422: "Someone else published at the same moment. Please try again.",
-  }[res.status];
-  throw new Error(reason ? `${reason}${detail ? ` (${detail})` : ""}` : `GitHub error ${res.status}${detail ? `: ${detail}` : ""}`);
+  const known = { 401: "err401", 403: "err403", 404: "err404", 409: "err409", 422: "err422" }[res.status];
+  const reason = known ? t(known) : t("errOther", { status: res.status });
+  throw new Error(detail ? `${reason} (${detail})` : reason);
 }
 
 /* ---------------- encoding helpers ---------------- */
@@ -240,7 +239,7 @@ const slug = (s) => String(s).normalize("NFKD").replace(/[̀-ͯ]/g, "").toLowerC
 
 /** Resize to fit 1600px and re-encode as JPEG. Re-encoding also drops EXIF/GPS data from phone photos. */
 async function compressImage(file) {
-  if (!file.type.startsWith("image/")) throw new Error(`“${file.name}” isn't an image.`);
+  if (!file.type.startsWith("image/")) throw new Error(t("errNotImage", { name: file.name }));
   let source;
   try {
     source = await createImageBitmap(file);
@@ -248,7 +247,7 @@ async function compressImage(file) {
     source = await new Promise((resolve, reject) => {
       const im = new Image();
       im.onload = () => resolve(im);
-      im.onerror = () => reject(new Error(`Couldn't read “${file.name}”. Try a JPG or PNG.`));
+      im.onerror = () => reject(new Error(t("errReadImage", { name: file.name })));
       im.src = URL.createObjectURL(file);
     });
   }
@@ -262,7 +261,7 @@ async function compressImage(file) {
   ctx.drawImage(source, 0, 0, canvas.width, canvas.height);
   source.close?.();
   const blob = await new Promise((resolve) => canvas.toBlob(resolve, "image/jpeg", 0.85));
-  if (!blob) throw new Error("Couldn't process the image.");
+  if (!blob) throw new Error(t("errProcessImage"));
   return blob;
 }
 
@@ -304,7 +303,7 @@ async function onSubmit(e) {
   if (busy) return;
   const f = form.elements;
   const val = (k) => f[k].value.trim();
-  const fields = Object.fromEntries(FIELDS.map((k) => [k, val(k)]));
+  const fields = Object.fromEntries([...FIELDS, ...AR_FIELDS].map((k) => [k, val(k)]));
   fields.event = fields.event || "eFootball";
 
   form.querySelectorAll(".field.invalid").forEach((el) => el.classList.remove("invalid"));
@@ -313,14 +312,14 @@ async function onSubmit(e) {
     missing.forEach((k) => f[k].closest(".field").classList.add("invalid"));
     showTab("winner");
     f[missing[0]].focus();
-    setStatus("Champion and team are required.", "error");
+    setStatus(t("stRequired"), "error");
     return;
   }
   const cfg = readGithubConfig();
   if (!cfg.token || !cfg.owner || !cfg.repo) {
     fillGithubFields();
     showTab("github");
-    setStatus("Connect to GitHub first: fill in these fields and press “Save & test connection”. Your winner details are kept.", "warn");
+    setStatus(t("stConnectFirst"), "warn");
     return;
   }
 
@@ -337,7 +336,7 @@ async function onSubmit(e) {
 
     const uploads = [];
     const winFile = $("#winFile").files[0], coverFile = $("#coverFile").files[0];
-    if (winFile || coverFile) setStatus("Resizing images…");
+    if (winFile || coverFile) setStatus(t("stResizing"));
     if (winFile) {
       winImage = `${IMG_DIR}/${id}-win-${stamp}.jpg`;
       uploads.push({ path: winImage, blob: await compressImage(winFile) });
@@ -348,12 +347,12 @@ async function onSubmit(e) {
       uploads.push({ path: cover, blob: await compressImage(coverFile) });
     }
 
-    setStatus("Publishing to GitHub…");
+    setStatus(t("stPublishing"));
     const entry = { id, ...fields, winImage, cover, coverCreditUrl };
     const result = await commitChange(cfg, uploads, (data) => {
       if (wasEditing) {
         const i = data.winners.findIndex((w) => w.id === wasEditing.id);
-        if (i < 0) throw new Error("This winner isn't in the published data any more (deleted elsewhere?). Reload the page.");
+        if (i < 0) throw new Error(t("errGone"));
         data.winners[i] = { ...data.winners[i], ...entry };
         return `Update winner: ${entry.player} (${entry.team})`;
       }
@@ -363,7 +362,7 @@ async function onSubmit(e) {
     uploads.forEach((u) => registerLocalImage(u.path, u.blob));
     applyEfootball(result.data, { pending: true });
     closeDialog(true);
-    toast(wasEditing ? "Saved ✓ The site updates for everyone in about a minute." : `🏆 ${entry.player} added! Live for everyone in about a minute.`, "ok");
+    toast(wasEditing ? t("toastSaved") : t("toastAdded", { player: showPlayer(entry.player) }), "ok");
     if (!wasEditing) document.getElementById("top").scrollIntoView({ behavior: "smooth" });
   } catch (err) {
     console.error(err);
@@ -380,18 +379,18 @@ async function removeWinner(winner) {
     showTab("github");
     return;
   }
-  const label = `${winner.player} – ${teamName(winner.team)}`;
-  if (!window.confirm(`Delete “${label}” from the eFootball champions?\n\nThis publishes the change to the website.`)) return;
-  toast("Deleting…");
+  const label = `${showPlayer(winner.player)} – ${showTeam(winner)}`;
+  if (!window.confirm(t("confirmDelete", { label }))) return;
+  toast(t("toastDeleting"));
   try {
     const result = await commitChange(cfg, [], (data) => {
       const before = data.winners.length;
       data.winners = data.winners.filter((w) => w.id !== winner.id);
-      if (data.winners.length === before) throw new Error("That winner was already removed.");
+      if (data.winners.length === before) throw new Error(t("errAlreadyRemoved"));
       return `Remove winner: ${winner.player} (${winner.team})`;
     });
     applyEfootball(result.data, { pending: true });
-    toast(`Deleted “${label}”. The site updates for everyone in about a minute.`, "ok");
+    toast(t("toastDeleted", { label }), "ok");
   } catch (err) {
     toast(err.message || String(err), "error");
   }
