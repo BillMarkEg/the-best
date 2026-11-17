@@ -4,7 +4,9 @@
      - efootball.json   : the eFootball era, edited from the "Add winner" form
      - names_ar.json    : Arabic names for teams / tournaments / players (optional) */
 
-import { t, tp, isArabic, setLang, applyStatic, fmtNum, fmtDate, listJoin, iso } from "./i18n.js";
+// Keep the ?v= tags identical in index.html, app.js and admin.js (tools/bump_version.py does it),
+// so every file loads the same version of each module.
+import { t, tp, isArabic, setLang, applyStatic, fmtNum, fmtDate, listJoin, iso } from "./i18n.js?v=20261117021445";
 
 const DATA_PES = "data/pes_history.json";
 const DATA_EF = "data/efootball.json";
@@ -78,7 +80,8 @@ function img(path, cls, alt = "", extra = 'loading="lazy"') {
 
 /* ---------------- data ---------------- */
 async function getJSON(url, fresh = false) {
-  const res = await fetch(fresh ? `${url}?v=${Date.now()}` : url, { cache: fresh ? "no-store" : "default" });
+  // "no-cache" still uses the browser's copy, but checks with GitHub first that it hasn't changed.
+  const res = await fetch(fresh ? `${url}?v=${Date.now()}` : url, { cache: fresh ? "no-store" : "no-cache" });
   if (!res.ok) throw new Error(`Could not load ${url} (HTTP ${res.status})`);
   return res.json();
 }
@@ -619,7 +622,7 @@ async function boot() {
     $("#heroName").textContent = t("loadError");
     $("#heroTeam").textContent = location.protocol === "file:" ? t("fileProtocol") : String(err.message || err);
   }
-  import("./admin.js").then((m) => m.initAdmin()).catch((e) => console.error("Admin tools failed to load", e));
+  import("./admin.js?v=20261117021445").then((m) => m.initAdmin()).catch((e) => console.error("Admin tools failed to load", e));
 }
 
 boot();

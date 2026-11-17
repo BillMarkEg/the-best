@@ -5,8 +5,9 @@
    GitHub Pages then redeploys the site, usually within a minute.
    The access token is stored in this browser only (localStorage). */
 
-import { state, applyEfootball, toast, readGithubConfig, registerLocalImage, renderAll, showPlayer, showTeam } from "./app.js";
-import { t } from "./i18n.js";
+// Same ?v= tags as index.html and app.js, so these resolve to the already-loaded modules.
+import { state, applyEfootball, toast, readGithubConfig, registerLocalImage, renderAll, showPlayer, showTeam } from "./app.js?v=20261117021445";
+import { t } from "./i18n.js?v=20261117021445";
 
 const LS_GITHUB = "thebest.github";
 const DATA_PATH = "data/efootball.json";

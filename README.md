@@ -13,6 +13,7 @@ A small static website for our tournaments: the latest champion first, the eFoot
 | `assets/js/i18n.js` | All English and Arabic interface text |
 | `our_tournments.xlsx` | The original sheet (`tournments`, PES 2012 to PES 2021) plus the new `eFootball` sheet |
 | `tools/sync_excel.py` | Keeps the workbook and the website data in sync |
+| `tools/bump_version.py` | Makes browsers download new code after you change CSS/JavaScript |
 
 ## Put it online (one time)
 
@@ -60,6 +61,18 @@ python tools/sync_excel.py
 ```
 
 Close the workbook in Excel first. The script needs `openpyxl` (`pip install openpyxl`).
+
+## Changing the code
+
+GitHub Pages lets browsers keep files for 10 minutes, so after an update a visitor could get the new page with old scripts.
+After editing anything in `assets/css` or `assets/js`, run this before committing:
+
+```bash
+python tools/bump_version.py
+```
+
+It gives every CSS and JavaScript link a new `?v=` tag, so browsers download the new code straight away.
+Winners added from the website don't need it: those only change data and images.
 
 ## Preview locally
 
