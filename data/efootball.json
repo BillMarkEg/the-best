@@ -1,0 +1,39 @@
+{
+  "updatedAt": "2026-11-17T00:00:00.000Z",
+  "winners": [
+    {
+      "id": "lord-kashiwa-reysol",
+      "player": "Lord",
+      "team": "Kashiwa Reysol",
+      "event": "eFootball",
+      "date": "",
+      "competitors": "",
+      "star": "Luis Suárez",
+      "runnerUp": "",
+      "score": "",
+      "headline": "",
+      "story": "",
+      "winImage": "",
+      "cover": "assets/img/news/lord-kashiwa-suarez.jpg",
+      "coverCredit": "Luis Suárez, Uruguay v England, 2014 World Cup · Jimmy Baikovicius, CC BY-SA 2.0",
+      "coverCreditUrl": "https://commons.wikimedia.org/wiki/File:FIFA_World_Cup_2014_-_Uruguay_2_-_England_1_-_140619-6454-jikatu_(14282608880).jpg"
+    },
+    {
+      "id": "legend-master-suzhou-dongwu",
+      "player": "Legend Master",
+      "team": "Suzhou Dongwu F.C.",
+      "event": "eFootball",
+      "date": "",
+      "competitors": "",
+      "star": "",
+      "runnerUp": "",
+      "score": "",
+      "headline": "",
+      "story": "",
+      "winImage": "",
+      "cover": "assets/img/news/lm-suzhou-bale.jpg",
+      "coverCredit": "Gareth Bale playing for Wales, 2015 · Jon Candy, CC BY-SA 2.0",
+      "coverCreditUrl": "https://commons.wikimedia.org/wiki/File:Gareth_Bale_WAL_2015.jpg"
+    }
+  ]
+}

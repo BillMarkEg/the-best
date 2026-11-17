@@ -1,0 +1,11 @@
+# Local tooling
+.claude/
+__pycache__/
+*.pyc
+
+# Excel / OS temp files
+~$*.xlsx
+.~lock.*
+Thumbs.db
+.DS_Store
+desktop.ini
