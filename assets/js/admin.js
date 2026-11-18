@@ -1,398 +1,527 @@
-/* Add / edit / delete eFootball winners from the website.
+/* THE BEST · admin dashboard (admin.html)
+   Only usable with a GitHub token that can write to the site's repository: every change is a
+   commit, made from this browser (see github.js). Here the admin announces championships,
+   records each championship's winner, edits or deletes winners, and connects the free
+   Google Apps Script service that handles sign-ups and reminders (tools/notifications/Code.gs). */
+import { t, tp, setLang, isArabic, applyStatic, fmtDateTime, fmtDate, tzName, iso } from "./i18n.js?v=20261118102123";
+import {
+  $, $$, esc, icon, fmt, avatar, assignColors, showPlayer, showTeam, showEvent, slug,
+  getJSON, getOptionalJSON, loadArabicNames, normalizeEf, normalizeChamps, normalizeConfig,
+  DATA_PES, DATA_EF, DATA_CHAMPS, DATA_CONFIG, newerPending, hasPending, savePending, watchPending,
+  readGithubConfig, saveGithubConfig, toast, initImageFallback, confirmBox,
+  champStatus, champName, remindMinutes, fetchSignups, isSignupUrl,
+} from "./core.js?v=20261118102123";
+import { checkConnection, commitData } from "./github.js?v=20261118102123";
+import { initWinnerForm, openWinnerForm, removeWinner } from "./winner-form.js?v=20261118102123";
 
-   Changes are committed straight to the site's GitHub repository with the
-   GitHub REST API (one commit per change: the images + data/efootball.json).
-   GitHub Pages then redeploys the site, usually within a minute.
-   The access token is stored in this browser only (localStorage). */
+const LS_SHEET = "thebest.sheetUrl";
+const SCRIPT_PATH = "tools/notifications/Code.gs";
+const STATUS_KEY = { upcoming: "stUpcoming", live: "stLive", awaiting: "stAwaiting", finished: "stFinished", cancelled: "stCancelled" };
 
-// Same ?v= tags as index.html and app.js, so these resolve to the already-loaded modules.
-import { state, applyEfootball, toast, readGithubConfig, registerLocalImage, renderAll, showPlayer, showTeam } from "./app.js?v=20261117021445";
-import { t } from "./i18n.js?v=20261117021445";
+const state = {
+  ef: { updatedAt: "", winners: [] },
+  champs: { updatedAt: "", championships: [] },
+  config: { updatedAt: "", signupApi: "" },
+  pesPlayers: [],
+  counts: null,
+  countsError: "",
+  connected: false,
+  repo: "",
+};
+let champEditing = null, champBusy = false, setupOpened = false;
 
-const LS_GITHUB = "thebest.github";
-const DATA_PATH = "data/efootball.json";
-const IMG_DIR = "assets/img/news";
-const MAX_IMAGE_SIDE = 1600;
-
-const $ = (sel, root = document) => root.querySelector(sel);
-let dialog, form, editing = null, busy = false;
-const objectUrls = [];
-
-export function initAdmin() {
-  dialog = $("#winnerDialog");
-  form = $("#winnerForm");
-  document.addEventListener("click", onDocumentClick);
-  form.addEventListener("submit", onSubmit);
-  dialog.querySelectorAll("[data-close]").forEach((b) => b.addEventListener("click", () => closeDialog()));
-  dialog.addEventListener("cancel", (e) => { if (busy) e.preventDefault(); });
-  dialog.addEventListener("close", resetDialog);
-  dialog.querySelectorAll(".tab").forEach((tab) => tab.addEventListener("click", () => showTab(tab.dataset.tab)));
-  $("#winFile").addEventListener("change", () => previewFile("winFile", "winPreview"));
-  $("#coverFile").addEventListener("change", () => previewFile("coverFile", "coverPreview"));
-  $("#ghTest").addEventListener("click", testConnection);
-  $("#ghForget").addEventListener("click", forgetToken);
-  refreshAdminMode();
-  if (location.hash === "#add") openEditor(null);
+/* ---------------- rendering ---------------- */
+function renderAll() {
+  const players = [...new Set([...state.pesPlayers, ...state.ef.winners.map((w) => w.player)])];
+  assignColors(players);
+  $("#playerList").innerHTML = players.map((p) => `<option value="${esc(p)}"></option>`).join("");
+  const events = new Set(["eFootball", ...state.ef.winners.map((w) => w.event).filter(Boolean), ...state.champs.championships.map((c) => c.name)]);
+  $("#eventList").innerHTML = [...events].map((e) => `<option value="${esc(e)}"></option>`).join("");
+  renderChamps();
+  renderWinners();
+  renderSettings();
+  $("#pendingBanner").hidden = !hasPending();
 }
 
-/* ---------------- dialog ---------------- */
-function refreshAdminMode() {
-  const connected = Boolean(readGithubConfig().token);
-  document.body.classList.toggle("is-admin", connected);
-  $("#connDot").classList.toggle("on", connected);
+const ORDER = { live: 0, upcoming: 1, awaiting: 2, finished: 3, cancelled: 4 };
+function renderChamps() {
+  const now = Date.now();
+  const list = state.champs.championships
+    .map((c) => ({ c, status: champStatus(c, now), start: Date.parse(c.startsAt) }))
+    .sort((a, b) => ORDER[a.status] - ORDER[b.status] || (a.status === "upcoming" ? a.start - b.start : b.start - a.start));
+  $("#champList").innerHTML = list.length ? list.map(champRow).join("") : `<p class="card empty">${esc(t("champsEmpty"))}</p>`;
 }
 
-function onDocumentClick(e) {
-  const target = e.target.closest?.("[data-add],[data-edit],[data-delete]");
-  if (!target) return;
-  if (target.hasAttribute("data-add")) return openEditor(null);
-  const id = target.dataset.edit || target.dataset.delete;
-  const winner = state.ef.winners.find((w) => w.id === id);
-  if (!winner) return;
-  if (target.hasAttribute("data-edit")) openEditor(winner);
-  else removeWinner(winner);
+const btn = (act, id, label, ico, cls = "btn-ghost") =>
+  `<button class="btn ${cls} btn-sm" type="button" data-act="${act}" data-id="${esc(id)}">${icon(ico)}<span>${esc(t(label))}</span></button>`;
+
+function champRow({ c, status }) {
+  const winner = c.winnerId ? state.ef.winners.find((w) => w.id === c.winnerId) : null;
+  const n = state.counts ? state.counts[c.id]?.count || 0 : null;
+  const names = state.counts?.[c.id]?.names || [];
+  const meta = [`<span>${icon("calendar")}${esc(fmtDateTime(c.startsAt, { year: true }))}</span>`];
+  if (status === "upcoming") meta.push(`<span>${icon("bell")}${esc(t("remindShort", { minutes: fmt(remindMinutes(c)) }))}</span>`);
+  if (c.maxPlayers) meta.push(`<span>${icon("users")}${esc(t("maxShort", { max: fmt(c.maxPlayers) }))}</span>`);
+
+  let signups = "";
+  if (status !== "finished" && status !== "cancelled") {
+    if (!state.config.signupApi) signups = `<p class="a-signups muted">${icon("users")}${esc(t("champSignupsOff"))}</p>`;
+    else if (n !== null) signups = `<p class="a-signups">${icon("users")}<span>${esc(tp("signedUpN", n))}${names.length ? ` · ${names.map((x) => `<bdi>${esc(x)}</bdi>`).join(", ")}` : ""}</span></p>`;
+  }
+  const actions = [];
+  if (status === "live" || status === "awaiting") actions.push(btn("record", c.id, "actRecord", "trophy", "btn-primary"));
+  if (status === "upcoming") actions.push(btn("record", c.id, "actRecord", "trophy"));
+  if (winner) actions.push(btn("editwinner", winner.id, "actEditWinner", "trophy"));
+  actions.push(btn("edit", c.id, "actEdit", "edit"));
+  if (status === "upcoming" || status === "live") actions.push(btn("calloff", c.id, "actCallOff", "ban"));
+  if (status === "cancelled") actions.push(btn("restore", c.id, "actRestore", "restore"));
+  actions.push(btn("delete", c.id, "actDelete", "trash", "btn-ghost danger"));
+  return `
+    <article class="card a-row is-${status}">
+      <div class="a-main">
+        <div class="a-title"><span class="badge st-${status}">${esc(t(STATUS_KEY[status]))}</span><h3><bdi>${esc(champName(c))}</bdi></h3></div>
+        <p class="a-meta">${meta.join("")}</p>
+        ${winner ? `<p class="a-winner">${avatar(winner.player)}<span>${esc(t("champWinnerLine", { player: iso(showPlayer(winner.player)), team: iso(showTeam(winner)) }))}</span></p>` : ""}
+        ${signups}
+      </div>
+      <div class="a-actions">${actions.join("")}</div>
+    </article>`;
 }
 
-function showTab(name) {
-  dialog.querySelectorAll(".tab").forEach((tab) => tab.setAttribute("aria-selected", String(tab.dataset.tab === name)));
-  dialog.querySelectorAll(".panel").forEach((p) => { p.hidden = p.dataset.panel !== name; });
+function renderWinners() {
+  const list = state.ef.winners.slice().reverse();
+  $("#winnerList").innerHTML = list.length ? list.map((w) => {
+    const c = w.championshipId ? state.champs.championships.find((x) => x.id === w.championshipId) : null;
+    const meta = [
+      `<span>${icon("shield")}<bdi>${esc(showTeam(w))}</bdi></span>`,
+      `<span>${icon("trophy")}<bdi>${esc(c ? champName(c) : showEvent(w) || "eFootball")}</bdi></span>`,
+    ];
+    if (w.date) meta.push(`<span>${icon("calendar")}${esc(fmtDate(w.date))}</span>`);
+    return `
+      <article class="card a-row">
+        <div class="a-main">
+          <div class="a-title">${avatar(w.player)}<h3><bdi>${esc(showPlayer(w.player))}</bdi></h3></div>
+          <p class="a-meta">${meta.join("")}</p>
+        </div>
+        <div class="a-actions">
+          ${btn("editwinner", w.id, "actEdit", "edit")}
+          ${btn("delwinner", w.id, "actDelete", "trash", "btn-ghost danger")}
+        </div>
+      </article>`;
+  }).join("") : `<p class="card empty">${esc(t("winnersEmpty"))}</p>`;
 }
 
-function setStatus(message, type = "") {
-  const el = $("#formStatus");
+const totalSignups = (counts) => Object.values(counts || {}).reduce((n, c) => n + (c.count || 0), 0);
+function renderSettings() {
+  const api = state.config.signupApi;
+  const input = $("#apiForm").elements.api;
+  if (!input.dataset.dirty) input.value = api;
+  $("#apiRemove").hidden = !api;
+  const st = $("#setStatus");
+  let cls = "", text;
+  if (!api) [cls, text] = ["warn", t("setOff")];
+  else if (state.countsError) [cls, text] = ["error", t("setErr", { error: state.countsError })];
+  else if (state.counts) [cls, text] = ["ok", t("setOk", { n: fmt(totalSignups(state.counts)) })];
+  else text = t("setChecking");
+  st.className = `set-status ${cls}`;
+  st.textContent = text;
+  if (!setupOpened) {
+    $("#setupHow").open = !api;
+    setupOpened = true;
+  }
+  $("#setupCallout").hidden = Boolean(api);
+  const sheet = readSheetUrl();
+  $("#sheetUrl").value = sheet;
+  $("#sheetOpen").hidden = !sheet;
+  if (sheet) $("#sheetOpen").href = sheet;
+  const cfg = readGithubConfig();
+  $("#scriptLink").href = cfg.owner && cfg.repo
+    ? `https://github.com/${encodeURIComponent(cfg.owner)}/${encodeURIComponent(cfg.repo)}/blob/${encodeURIComponent(cfg.branch)}/${SCRIPT_PATH}`
+    : SCRIPT_PATH;
+}
+const readSheetUrl = () => {
+  try { return localStorage.getItem(LS_SHEET) || ""; } catch { return ""; }
+};
+
+function renderRemindOptions() {
+  $$("#champForm select[name=remindBefore] option").forEach((o) => { o.textContent = t("remindOpt", { n: fmt(o.value) }); });
+}
+
+/* ---------------- sign-in ---------------- */
+function setLoginStatus(message, type = "") {
+  const el = $("#loginStatus");
   el.textContent = message;
   el.className = `form-status ${type}`;
 }
-
-function setBusy(on) {
-  busy = on;
-  $("#publishBtn").disabled = on;
-  $("#ghTest").disabled = on;
-  dialog.querySelectorAll("[data-close]").forEach((b) => { b.disabled = on; });
+function showDashboard() {
+  $("#loginCard").hidden = true;
+  $("#dash").hidden = false;
+  $("#connLabel").textContent = t("connectedAs", { repo: state.repo });
+  refreshCounts();
 }
-
-const today = () => {
-  const d = new Date();
-  return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
-};
-
-function setPreview(previewId, src) {
-  const box = $(`#${previewId}`);
-  box.replaceChildren();
-  if (src) {
-    const im = new Image();
-    im.alt = "";
-    im.src = state.localImages.get(src) || src;
-    box.append(im);
-  } else {
-    box.innerHTML = '<svg class="icon" aria-hidden="true"><use href="#i-image"/></svg>';
-  }
-}
-
-function previewFile(inputId, previewId) {
-  const file = $(`#${inputId}`).files[0];
-  if (!file) return;
-  const url = URL.createObjectURL(file);
-  objectUrls.push(url);
-  setPreview(previewId, url);
-}
-
-const FIELDS = ["player", "team", "event", "date", "runnerUp", "score", "star", "competitors", "headline", "story", "coverCredit"];
-const AR_FIELDS = ["teamAr", "eventAr", "starAr", "headlineAr", "storyAr"];
-
-function openEditor(winner) {
-  editing = winner;
-  form.reset();
-  form.querySelectorAll(".field.invalid").forEach((f) => f.classList.remove("invalid"));
-  $("#dialogTitle").textContent = t(winner ? "dlgEdit" : "dlgAdd");
-  $("#publishBtn span").textContent = t(winner ? "btnSave" : "btnPublish");
-  const f = form.elements;
-  if (winner) [...FIELDS, ...AR_FIELDS].forEach((k) => { f[k].value = winner[k] || ""; });
-  else { f.event.value = "eFootball"; f.date.value = today(); }
-  form.querySelector(".ar-fields").open = Boolean(winner && AR_FIELDS.some((k) => winner[k]));
-  setPreview("winPreview", winner?.winImage);
-  setPreview("coverPreview", winner?.cover);
-  $("#winRemoveWrap").hidden = !winner?.winImage;
-  $("#coverRemoveWrap").hidden = !winner?.cover;
-  fillGithubFields();
-  showTab("winner");
-  const connected = Boolean(readGithubConfig().token);
-  setStatus(connected ? "" : t("stNotConnected"), connected ? "" : "warn");
-  dialog.showModal();
-  setTimeout(() => f.player.focus(), 30);
-}
-
-function closeDialog(force = false) {
-  if (busy && !force) return;
-  dialog.close();
-}
-
-function resetDialog() {
-  editing = null;
-  objectUrls.splice(0).forEach((u) => URL.revokeObjectURL(u));
-  setStatus("");
-}
-
-/* ---------------- GitHub connection ---------------- */
-function fillGithubFields() {
-  const cfg = readGithubConfig(), f = form.elements;
+function showLogin() {
+  const cfg = readGithubConfig(), f = $("#loginForm").elements;
   f.ghOwner.value = cfg.owner;
   f.ghRepo.value = cfg.repo;
   f.ghBranch.value = cfg.branch;
   f.ghToken.value = "";
   f.ghToken.placeholder = cfg.token ? t("tokenSaved") : "github_pat_…";
+  $("#dash").hidden = true;
+  $("#loginCard").hidden = false;
 }
-
-function saveGithubFields() {
-  const f = form.elements, current = readGithubConfig();
+async function connect(cfg) {
+  setLoginStatus(t("stConnecting"));
+  $("#loginBtn").disabled = true;
+  try {
+    const { repo, canWrite } = await checkConnection(cfg, DATA_EF);
+    if (!canWrite) throw new Error(t("stNoPush", { repo }));
+    state.connected = true;
+    state.repo = repo;
+    setLoginStatus("");
+    showDashboard();
+  } catch (err) {
+    state.connected = false;
+    showLogin();
+    setLoginStatus(err.message || String(err), "error");
+  } finally {
+    $("#loginBtn").disabled = false;
+  }
+}
+function onLogin(e) {
+  e.preventDefault();
+  const f = e.currentTarget.elements, current = readGithubConfig();
   const cfg = {
     owner: f.ghOwner.value.trim(),
     repo: f.ghRepo.value.trim(),
     branch: f.ghBranch.value.trim() || "main",
     token: f.ghToken.value.trim() || current.token,
   };
-  try { localStorage.setItem(LS_GITHUB, JSON.stringify(cfg)); } catch { /* storage unavailable */ }
-  return cfg;
+  if (!cfg.owner || !cfg.repo || !cfg.token) return setLoginStatus(t("stFillGh"), "error");
+  saveGithubConfig(cfg);
+  connect(cfg);
+}
+function disconnect() {
+  saveGithubConfig({ ...readGithubConfig(), token: "" });
+  state.connected = false;
+  showLogin();
+  setLoginStatus(t("stForgot"), "ok");
 }
 
-async function testConnection() {
-  const cfg = saveGithubFields();
-  fillGithubFields();
-  if (!cfg.owner || !cfg.repo || !cfg.token) {
-    setStatus(t("stFillGh"), "error");
-    return;
-  }
-  setBusy(true);
-  setStatus(t("stChecking"));
-  try {
-    const repo = await gh(cfg, "GET", "");
-    await gh(cfg, "GET", `/git/ref/heads/${branchPath(cfg)}`);
-    await gh(cfg, "GET", `/contents/${DATA_PATH}?ref=${encodeURIComponent(cfg.branch)}`);
-    const canWrite = repo.permissions ? repo.permissions.push !== false : true;
-    refreshAdminMode();
-    renderAll();
-    if (canWrite) {
-      setStatus(t("stConnected", { repo: repo.full_name }), "ok");
-      setTimeout(() => { if (dialog.open) showTab("winner"); }, 900);
-    } else {
-      setStatus(t("stNoPush", { repo: repo.full_name }), "error");
-    }
-  } catch (err) {
-    setStatus(err.message, "error");
-  } finally {
-    setBusy(false);
-  }
-}
-
-function forgetToken() {
-  const cfg = readGithubConfig();
-  try { localStorage.setItem(LS_GITHUB, JSON.stringify({ ...cfg, token: "" })); } catch { /* storage unavailable */ }
-  fillGithubFields();
-  refreshAdminMode();
+/* ---------------- publishing ---------------- */
+/** After a commit: show the new data straight away and keep it until GitHub Pages serves it. */
+function applyPublished(files) {
+  savePending(files);
+  if (files[DATA_EF]) state.ef = normalizeEf(files[DATA_EF]);
+  if (files[DATA_CHAMPS]) state.champs = normalizeChamps(files[DATA_CHAMPS]);
+  if (files[DATA_CONFIG]) state.config = normalizeConfig(files[DATA_CONFIG]);
   renderAll();
-  setStatus(t("stForgot"), "ok");
+  watchPending(onLive);
 }
-
-const branchPath = (cfg) => cfg.branch.split("/").map(encodeURIComponent).join("/");
-
-async function gh(cfg, method, path, body) {
-  // "thebest.apiBase" lets a local mock API stand in for GitHub while testing; normally unset.
-  const base = (localStorage.getItem("thebest.apiBase") || "https://api.github.com").replace(/\/$/, "");
-  let res;
+function onLive(live) {
+  if (live[DATA_EF]) state.ef = normalizeEf(live[DATA_EF]);
+  if (live[DATA_CHAMPS]) state.champs = normalizeChamps(live[DATA_CHAMPS]);
+  if (live[DATA_CONFIG]) state.config = normalizeConfig(live[DATA_CONFIG]);
+  renderAll();
+  toast(t("toastLive"), "ok");
+}
+const findChamp = (data, id) => {
+  data.championships = Array.isArray(data.championships) ? data.championships : [];
+  const c = data.championships.find((x) => x.id === id);
+  if (!c) throw new Error(t("errChampGone"));
+  return c;
+};
+async function publish(edits, message) {
+  toast(t("stPublishing"));
   try {
-    res = await fetch(`${base}/repos/${encodeURIComponent(cfg.owner)}/${encodeURIComponent(cfg.repo)}${path}`, {
-      method,
-      cache: "no-store",
-      headers: {
-        Accept: "application/vnd.github+json",
-        Authorization: `Bearer ${cfg.token}`,
-        ...(body ? { "Content-Type": "application/json" } : {}),
-      },
-      body: body ? JSON.stringify(body) : undefined,
-    });
-  } catch {
-    throw new Error(t("errNetwork"));
-  }
-  if (res.ok) return res.status === 204 ? null : res.json();
-  let detail = "";
-  try { detail = (await res.json()).message || ""; } catch { /* no body */ }
-  const known = { 401: "err401", 403: "err403", 404: "err404", 409: "err409", 422: "err422" }[res.status];
-  const reason = known ? t(known) : t("errOther", { status: res.status });
-  throw new Error(detail ? `${reason} (${detail})` : reason);
-}
-
-/* ---------------- encoding helpers ---------------- */
-function utf8ToBase64(text) {
-  const bytes = new TextEncoder().encode(text);
-  let bin = "";
-  for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
-  return btoa(bin);
-}
-const base64ToUtf8 = (b64) => new TextDecoder().decode(Uint8Array.from(atob(b64.replace(/\s/g, "")), (c) => c.charCodeAt(0)));
-const blobToBase64 = (blob) => new Promise((resolve, reject) => {
-  const r = new FileReader();
-  r.onload = () => resolve(String(r.result).split(",")[1]);
-  r.onerror = () => reject(r.error);
-  r.readAsDataURL(blob);
-});
-const slug = (s) => String(s).normalize("NFKD").replace(/[̀-ͯ]/g, "").toLowerCase()
-  .replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 40) || "winner";
-
-/** Resize to fit 1600px and re-encode as JPEG. Re-encoding also drops EXIF/GPS data from phone photos. */
-async function compressImage(file) {
-  if (!file.type.startsWith("image/")) throw new Error(t("errNotImage", { name: file.name }));
-  let source;
-  try {
-    source = await createImageBitmap(file);
-  } catch {
-    source = await new Promise((resolve, reject) => {
-      const im = new Image();
-      im.onload = () => resolve(im);
-      im.onerror = () => reject(new Error(t("errReadImage", { name: file.name })));
-      im.src = URL.createObjectURL(file);
-    });
-  }
-  const scale = Math.min(1, MAX_IMAGE_SIDE / Math.max(source.width, source.height));
-  const canvas = document.createElement("canvas");
-  canvas.width = Math.max(1, Math.round(source.width * scale));
-  canvas.height = Math.max(1, Math.round(source.height * scale));
-  const ctx = canvas.getContext("2d");
-  ctx.fillStyle = "#0b1120";
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
-  ctx.drawImage(source, 0, 0, canvas.width, canvas.height);
-  source.close?.();
-  const blob = await new Promise((resolve) => canvas.toBlob(resolve, "image/jpeg", 0.85));
-  if (!blob) throw new Error(t("errProcessImage"));
-  return blob;
-}
-
-/* ---------------- committing ---------------- */
-async function readDataAt(cfg, ref) {
-  const file = await gh(cfg, "GET", `/contents/${DATA_PATH}?ref=${ref}`);
-  let b64 = file.content;
-  if (!b64 || file.encoding !== "base64") b64 = (await gh(cfg, "GET", `/git/blobs/${file.sha}`)).content;
-  return JSON.parse(base64ToUtf8(b64));
-}
-
-/** One commit containing the new images and the updated data file. `mutate` edits the data and returns the commit message. */
-async function commitChange(cfg, files, mutate) {
-  const ref = await gh(cfg, "GET", `/git/ref/heads/${branchPath(cfg)}`);
-  const baseSha = ref.object.sha;
-  const data = await readDataAt(cfg, baseSha); // always edit the latest published version
-  data.winners = Array.isArray(data.winners) ? data.winners : [];
-  const message = mutate(data);
-  data.updatedAt = new Date().toISOString();
-  const out = { updatedAt: data.updatedAt, ...data };
-
-  const contents = [];
-  for (const f of files) contents.push({ path: f.path, content: await blobToBase64(f.blob) });
-  contents.push({ path: DATA_PATH, content: utf8ToBase64(`${JSON.stringify(out, null, 2)}\n`) });
-  const tree = [];
-  for (const c of contents) {
-    const blob = await gh(cfg, "POST", "/git/blobs", { content: c.content, encoding: "base64" });
-    tree.push({ path: c.path, mode: "100644", type: "blob", sha: blob.sha });
-  }
-  const baseCommit = await gh(cfg, "GET", `/git/commits/${baseSha}`);
-  const newTree = await gh(cfg, "POST", "/git/trees", { base_tree: baseCommit.tree.sha, tree });
-  const commit = await gh(cfg, "POST", "/git/commits", { message: `${message}\n\nPublished from the website.`, tree: newTree.sha, parents: [baseSha] });
-  await gh(cfg, "PATCH", `/git/refs/heads/${branchPath(cfg)}`, { sha: commit.sha, force: false });
-  return { sha: commit.sha, data: out };
-}
-
-async function onSubmit(e) {
-  e.preventDefault();
-  if (busy) return;
-  const f = form.elements;
-  const val = (k) => f[k].value.trim();
-  const fields = Object.fromEntries([...FIELDS, ...AR_FIELDS].map((k) => [k, val(k)]));
-  fields.event = fields.event || "eFootball";
-
-  form.querySelectorAll(".field.invalid").forEach((el) => el.classList.remove("invalid"));
-  const missing = ["player", "team"].filter((k) => !fields[k]);
-  if (missing.length) {
-    missing.forEach((k) => f[k].closest(".field").classList.add("invalid"));
-    showTab("winner");
-    f[missing[0]].focus();
-    setStatus(t("stRequired"), "error");
-    return;
-  }
-  const cfg = readGithubConfig();
-  if (!cfg.token || !cfg.owner || !cfg.repo) {
-    fillGithubFields();
-    showTab("github");
-    setStatus(t("stConnectFirst"), "warn");
-    return;
-  }
-
-  const wasEditing = editing;
-  setBusy(true);
-  try {
-    const stamp = Date.now().toString(36);
-    const id = wasEditing?.id || `${slug(fields.player)}-${slug(fields.team)}-${stamp}`;
-    let winImage = wasEditing?.winImage || "";
-    let cover = wasEditing?.cover || "";
-    let coverCreditUrl = wasEditing?.coverCreditUrl || "";
-    if (f.removeWin.checked) winImage = "";
-    if (f.removeCover.checked) { cover = ""; coverCreditUrl = ""; }
-
-    const uploads = [];
-    const winFile = $("#winFile").files[0], coverFile = $("#coverFile").files[0];
-    if (winFile || coverFile) setStatus(t("stResizing"));
-    if (winFile) {
-      winImage = `${IMG_DIR}/${id}-win-${stamp}.jpg`;
-      uploads.push({ path: winImage, blob: await compressImage(winFile) });
-    }
-    if (coverFile) {
-      cover = `${IMG_DIR}/${id}-cover-${stamp}.jpg`;
-      coverCreditUrl = "";
-      uploads.push({ path: cover, blob: await compressImage(coverFile) });
-    }
-
-    setStatus(t("stPublishing"));
-    const entry = { id, ...fields, winImage, cover, coverCreditUrl };
-    const result = await commitChange(cfg, uploads, (data) => {
-      if (wasEditing) {
-        const i = data.winners.findIndex((w) => w.id === wasEditing.id);
-        if (i < 0) throw new Error(t("errGone"));
-        data.winners[i] = { ...data.winners[i], ...entry };
-        return `Update winner: ${entry.player} (${entry.team})`;
-      }
-      data.winners.push(entry);
-      return `Add winner: ${entry.player} (${entry.team})`;
-    });
-    uploads.forEach((u) => registerLocalImage(u.path, u.blob));
-    applyEfootball(result.data, { pending: true });
-    closeDialog(true);
-    toast(wasEditing ? t("toastSaved") : t("toastAdded", { player: showPlayer(entry.player) }), "ok");
-    if (!wasEditing) document.getElementById("top").scrollIntoView({ behavior: "smooth" });
-  } catch (err) {
-    console.error(err);
-    setStatus(err.message || String(err), "error");
-  } finally {
-    setBusy(false);
-  }
-}
-
-async function removeWinner(winner) {
-  const cfg = readGithubConfig();
-  if (!cfg.token) {
-    openEditor(null);
-    showTab("github");
-    return;
-  }
-  const label = `${showPlayer(winner.player)} – ${showTeam(winner)}`;
-  if (!window.confirm(t("confirmDelete", { label }))) return;
-  toast(t("toastDeleting"));
-  try {
-    const result = await commitChange(cfg, [], (data) => {
-      const before = data.winners.length;
-      data.winners = data.winners.filter((w) => w.id !== winner.id);
-      if (data.winners.length === before) throw new Error(t("errAlreadyRemoved"));
-      return `Remove winner: ${winner.player} (${winner.team})`;
-    });
-    applyEfootball(result.data, { pending: true });
-    toast(t("toastDeleted", { label }), "ok");
+    const result = await commitData(readGithubConfig(), { edits, message });
+    applyPublished(result.files);
+    return true;
   } catch (err) {
     toast(err.message || String(err), "error");
+    return false;
   }
 }
+
+/* ---------------- championships ---------------- */
+function setChampStatus(message, type = "") {
+  const el = $("#champStatus");
+  el.textContent = message;
+  el.className = `form-status ${type}`;
+}
+const pad = (n) => String(n).padStart(2, "0");
+function openChamp(c = null) {
+  champEditing = c;
+  const form = $("#champForm"), f = form.elements;
+  form.reset();
+  form.querySelectorAll(".field.invalid").forEach((x) => x.classList.remove("invalid"));
+  $("#champDlgTitle").textContent = t(c ? "dlgEditChamp" : "dlgNewChamp");
+  $("#champSave span").textContent = t(c ? "btnSave" : "btnAnnounce");
+  if (c) {
+    const d = new Date(c.startsAt);
+    f.name.value = c.name || "";
+    f.nameAr.value = c.nameAr || "";
+    f.date.value = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+    f.time.value = `${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    f.remindBefore.value = String([15, 20, 30].includes(Number(c.remindBefore)) ? c.remindBefore : 30);
+    f.maxPlayers.value = c.maxPlayers || "";
+    f.details.value = c.details || "";
+    f.detailsAr.value = c.detailsAr || "";
+  } else {
+    f.remindBefore.value = "30";
+  }
+  $("#champTz").textContent = t("tzHint", { tz: tzName() });
+  $("#champTimeHint").hidden = !(c && state.config.signupApi && champStatus(c) === "upcoming");
+  setChampStatus("");
+  $("#champDialog").showModal();
+  setTimeout(() => f.name.focus(), 30);
+}
+
+async function onChampSubmit(e) {
+  e.preventDefault();
+  if (champBusy) return;
+  const form = e.currentTarget, f = form.elements;
+  const v = (k) => f[k].value.trim();
+  form.querySelectorAll(".field.invalid").forEach((x) => x.classList.remove("invalid"));
+  const name = v("name").replace(/\s+/g, " ");
+  const missing = ["name", "date", "time"].filter((k) => !v(k));
+  if (missing.length) {
+    missing.forEach((k) => f[k].closest(".field").classList.add("invalid"));
+    f[missing[0]].focus();
+    return setChampStatus(t("errChampRequired"), "error");
+  }
+  const start = new Date(`${v("date")}T${v("time")}`);
+  if (Number.isNaN(start.getTime())) {
+    f.date.closest(".field").classList.add("invalid");
+    return setChampStatus(t("errChampRequired"), "error");
+  }
+  const max = v("maxPlayers") ? Number(v("maxPlayers")) : 0;
+  if (v("maxPlayers") && (!Number.isInteger(max) || max < 2 || max > 128)) {
+    f.maxPlayers.closest(".field").classList.add("invalid");
+    return setChampStatus(t("errChampMax"), "error");
+  }
+  const entry = {
+    name,
+    nameAr: v("nameAr"),
+    startsAt: start.toISOString(),
+    remindBefore: Number(f.remindBefore.value) || 30,
+    maxPlayers: max || null,
+    details: v("details"),
+    detailsAr: v("detailsAr"),
+  };
+  const was = champEditing;
+  const id = was?.id || `${slug(name)}-${Date.now().toString(36)}`;
+  champBusy = true;
+  $("#champSave").disabled = true;
+  setChampStatus(t("stPublishing"));
+  try {
+    const result = await commitData(readGithubConfig(), {
+      edits: {
+        [DATA_CHAMPS]: (data) => {
+          if (was) Object.assign(findChamp(data, was.id), entry);
+          else data.championships = [...(Array.isArray(data.championships) ? data.championships : []), { id, ...entry, createdAt: new Date().toISOString() }];
+        },
+      },
+      message: was ? `Update championship: ${name}` : `Announce championship: ${name}`,
+    });
+    applyPublished(result.files);
+    $("#champDialog").close();
+    const c = state.champs.championships.find((x) => x.id === id);
+    if (!was && c && champStatus(c) !== "upcoming") {
+      toast(t("toastChampPast"), "ok");
+      openRecord(c);
+    } else {
+      toast(was ? t("toastChampSaved") : t("toastChampAdded", { name }), "ok");
+    }
+  } catch (err) {
+    setChampStatus(err.message || String(err), "error");
+  } finally {
+    champBusy = false;
+    $("#champSave").disabled = false;
+  }
+}
+
+function openRecord(c) {
+  openWinnerForm({ championship: c, signups: state.counts?.[c.id]?.count || 0 });
+}
+
+async function callOff(c) {
+  const ok = await confirmBox({ title: t("confirmCallOffTitle"), message: t("confirmCallOff", { name: champName(c) }), ok: t("btnCallOff"), danger: true });
+  if (!ok) return;
+  if (await publish({ [DATA_CHAMPS]: (data) => { findChamp(data, c.id).cancelled = true; } }, `Call off championship: ${c.name}`)) {
+    toast(t("toastCalledOff", { name: champName(c) }), "ok");
+  }
+}
+async function restore(c) {
+  if (await publish({ [DATA_CHAMPS]: (data) => { delete findChamp(data, c.id).cancelled; } }, `Restore championship: ${c.name}`)) {
+    toast(t("toastRestored", { name: champName(c) }), "ok");
+  }
+}
+async function deleteChamp(c) {
+  const ok = await confirmBox({
+    title: t("confirmDeleteChampTitle"),
+    message: t(c.winnerId ? "confirmDeleteChampWinner" : "confirmDeleteChamp", { name: champName(c) }),
+    ok: t("btnDelete"),
+    danger: true,
+  });
+  if (!ok) return;
+  const edits = {
+    [DATA_CHAMPS]: (data) => {
+      findChamp(data, c.id);
+      data.championships = data.championships.filter((x) => x.id !== c.id);
+    },
+  };
+  if (state.ef.winners.some((w) => w.championshipId === c.id)) {
+    edits[DATA_EF] = (data) => {
+      for (const w of data.winners || []) if (w.championshipId === c.id) delete w.championshipId;
+    };
+  }
+  if (await publish(edits, `Delete championship: ${c.name}`)) toast(t("toastChampDeleted", { name: champName(c) }), "ok");
+}
+
+function onAction(e) {
+  const el = e.target.closest?.("[data-act]");
+  if (!el) return;
+  const id = el.dataset.id, act = el.dataset.act;
+  if (act === "editwinner" || act === "delwinner") {
+    const w = state.ef.winners.find((x) => x.id === id);
+    if (!w) return;
+    if (act === "delwinner") return removeWinner(w);
+    const c = w.championshipId ? state.champs.championships.find((x) => x.id === w.championshipId) : null;
+    return openWinnerForm({ winner: w, championship: c });
+  }
+  const c = state.champs.championships.find((x) => x.id === id);
+  if (!c) return;
+  if (act === "edit") openChamp(c);
+  else if (act === "record") openRecord(c);
+  else if (act === "calloff") callOff(c);
+  else if (act === "restore") restore(c);
+  else if (act === "delete") deleteChamp(c);
+}
+
+/* ---------------- sign-ups & reminders ---------------- */
+function setApiStatus(message, type = "") {
+  const el = $("#apiStatus");
+  el.textContent = message;
+  el.className = `form-status ${type}`;
+}
+async function refreshCounts() {
+  const api = state.config.signupApi;
+  if (!api) {
+    state.counts = null;
+    state.countsError = "";
+    return renderAll();
+  }
+  try {
+    state.counts = await fetchSignups(api);
+    state.countsError = "";
+  } catch (err) {
+    state.counts = null;
+    state.countsError = err.message || String(err);
+  }
+  renderAll();
+}
+async function testApi() {
+  const url = $("#apiForm").elements.api.value.trim();
+  if (!isSignupUrl(url)) return setApiStatus(t("apiInvalid"), "error");
+  setApiStatus(t("setChecking"));
+  try {
+    const counts = await fetchSignups(url);
+    setApiStatus(t("apiTestOk", { n: fmt(totalSignups(counts)) }), "ok");
+  } catch (err) {
+    setApiStatus(t("setErr", { error: err.message || String(err) }), "error");
+  }
+}
+async function saveApi(e) {
+  e.preventDefault();
+  const input = $("#apiForm").elements.api;
+  const url = input.value.trim();
+  if (!isSignupUrl(url)) return setApiStatus(t("apiInvalid"), "error");
+  setApiStatus(t("stPublishing"));
+  try {
+    const result = await commitData(readGithubConfig(), { edits: { [DATA_CONFIG]: (data) => { data.signupApi = url; } }, message: "Turn on sign-ups and reminders" });
+    delete input.dataset.dirty;
+    applyPublished(result.files);
+    setApiStatus(t("apiSaved"), "ok");
+    refreshCounts();
+  } catch (err) {
+    setApiStatus(err.message || String(err), "error");
+  }
+}
+async function removeApi() {
+  const input = $("#apiForm").elements.api;
+  if (await publish({ [DATA_CONFIG]: (data) => { data.signupApi = ""; } }, "Turn off sign-ups")) {
+    delete input.dataset.dirty;
+    input.value = "";
+    setApiStatus(t("apiRemoved"), "ok");
+    refreshCounts();
+  }
+}
+async function copyScript() {
+  try {
+    const res = await fetch(SCRIPT_PATH, { cache: "no-cache" });
+    if (!res.ok) throw new Error(String(res.status));
+    // The script reads championships from this site, so it gets this site's address.
+    const site = `${location.origin}${location.pathname.replace(/[^/]*$/, "")}`;
+    const code = (await res.text()).replace(/^const SITE_URL = ".*";$/m, `const SITE_URL = "${site}";`);
+    await navigator.clipboard.writeText(code);
+    toast(t("scriptCopied"), "ok");
+  } catch {
+    toast(t("scriptCopyFail"), "error");
+  }
+}
+
+/* ---------------- wiring ---------------- */
+function bindUI() {
+  $("#langBtn").addEventListener("click", () => {
+    setLang(isArabic() ? "en" : "ar");
+    renderRemindOptions();
+    if (state.connected) $("#connLabel").textContent = t("connectedAs", { repo: state.repo });
+    renderAll();
+  });
+  $("#loginForm").addEventListener("submit", onLogin);
+  $("#disconnectBtn").addEventListener("click", disconnect);
+  $("#newChampBtn").addEventListener("click", () => openChamp());
+  $("#champForm").addEventListener("submit", onChampSubmit);
+  $$("#champDialog [data-close]").forEach((b) => b.addEventListener("click", () => { if (!champBusy) $("#champDialog").close(); }));
+  $("#champDialog").addEventListener("cancel", (e) => { if (champBusy) e.preventDefault(); });
+  $("#dash").addEventListener("click", onAction);
+  $("#apiForm").addEventListener("submit", saveApi);
+  $("#apiForm").elements.api.addEventListener("input", (e) => { e.target.dataset.dirty = "1"; });
+  $("#apiTest").addEventListener("click", testApi);
+  $("#apiRemove").addEventListener("click", removeApi);
+  $("#copyScript").addEventListener("click", copyScript);
+  $("#sheetUrl").addEventListener("change", (e) => {
+    const v = e.target.value.trim();
+    try { localStorage.setItem(LS_SHEET, /^https:\/\//.test(v) ? v : ""); } catch { /* storage unavailable */ }
+    renderSettings();
+  });
+  // Statuses (upcoming → playing now → needs a winner) follow the clock.
+  setInterval(() => { if (state.connected && !document.hidden) renderChamps(); }, 60000);
+}
+
+async function boot() {
+  applyStatic();
+  renderRemindOptions();
+  initImageFallback();
+  bindUI();
+  initWinnerForm({ saved: applyPublished });
+  try {
+    const [ef, champs, config, pes] = await Promise.all([
+      getJSON(DATA_EF, true), getOptionalJSON(DATA_CHAMPS), getOptionalJSON(DATA_CONFIG), getJSON(DATA_PES).catch(() => ({})), loadArabicNames(),
+    ]);
+    state.ef = normalizeEf(newerPending(DATA_EF, ef) || ef);
+    state.champs = normalizeChamps(newerPending(DATA_CHAMPS, champs) || champs);
+    state.config = normalizeConfig(newerPending(DATA_CONFIG, config) || config);
+    state.pesPlayers = Array.isArray(pes.winners) ? [...new Set(pes.winners.map((w) => w.player))] : [];
+  } catch (err) {
+    console.error(err);
+    toast(String(err.message || err), "error");
+  }
+  renderAll();
+  watchPending(onLive);
+  const cfg = readGithubConfig();
+  if (cfg.token && cfg.owner && cfg.repo) connect(cfg);
+  else showLogin();
+}
+
+boot();

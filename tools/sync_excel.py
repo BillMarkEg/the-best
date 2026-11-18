@@ -5,8 +5,8 @@
 
 1. Reads the PES-era sheet ("tournments") and writes data/pes_history.json for the website.
    Fix a typo in the sheet, run this, and the site's history/stats update.
-2. Copies the eFootball winners from data/efootball.json (managed from the website's
-   "Add winner" form) into the "eFootball" sheet, so the workbook stays complete.
+2. Copies the eFootball winners from data/efootball.json (managed from the admin
+   dashboard, admin.html) into the "eFootball" sheet, so the workbook stays complete.
 
 Requires: pip install openpyxl
 """

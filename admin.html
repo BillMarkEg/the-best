@@ -1,0 +1,273 @@
+<!doctype html>
+<html lang="en" dir="ltr" data-title-key="adminPageTitle">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Dashboard · The Best</title>
+  <script>
+    /* Apply a saved Arabic choice before the first paint, so the page doesn't flip direction after loading. */
+    (function () {
+      try {
+        var q = new URLSearchParams(location.search).get("lang");
+        var l = q === "ar" || q === "en" ? q : localStorage.getItem("thebest.lang");
+        if (l === "ar") { document.documentElement.lang = "ar"; document.documentElement.dir = "rtl"; }
+      } catch (e) { /* storage blocked: stay in English */ }
+    })();
+  </script>
+  <meta name="theme-color" content="#050810">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23f6c453' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9H4.5a2.5 2.5 0 0 1 0-5H6M18 9h1.5a2.5 2.5 0 0 0 0-5H18M4 22h16M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22M18 2H6v7a6 6 0 0 0 12 0V2Z'/%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:ital,wght@0,600;0,700;0,800;1,700;1,800&family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <!-- The ?v= tags make browsers fetch new code after each update; run tools/bump_version.py when code changes. -->
+  <link rel="stylesheet" href="assets/css/style.css?v=20261118102123">
+  <script type="module" src="assets/js/admin.js?v=20261118102123"></script>
+</head>
+<body class="admin-page">
+  <!-- Icon sprite -->
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <symbol id="i-trophy" viewBox="0 0 24 24"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6M18 9h1.5a2.5 2.5 0 0 0 0-5H18M4 22h16M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22M18 2H6v7a6 6 0 0 0 12 0V2Z"/></symbol>
+    <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+    <symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></symbol>
+    <symbol id="i-edit" viewBox="0 0 24 24"><path d="M12 20h9M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></symbol>
+    <symbol id="i-trash" viewBox="0 0 24 24"><path d="M3 6h18M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6M10 11v6M14 11v6M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></symbol>
+    <symbol id="i-calendar" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></symbol>
+    <symbol id="i-users" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></symbol>
+    <symbol id="i-image" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></symbol>
+    <symbol id="i-github" viewBox="0 0 24 24"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/></symbol>
+    <symbol id="i-globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></symbol>
+    <symbol id="i-bell" viewBox="0 0 24 24"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></symbol>
+    <symbol id="i-megaphone" viewBox="0 0 24 24"><path d="m3 11 18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/></symbol>
+    <symbol id="i-ban" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="m4.9 4.9 14.2 14.2"/></symbol>
+    <symbol id="i-restore" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></symbol>
+    <symbol id="i-logout" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></symbol>
+    <symbol id="i-external" viewBox="0 0 24 24"><path d="M15 3h6v6M10 14 21 3M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></symbol>
+    <symbol id="i-copy" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></symbol>
+    <symbol id="i-chat" viewBox="0 0 24 24"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/></symbol>
+  </svg>
+
+  <a class="skip-link" href="#main" data-i18n="skip">Skip to content</a>
+
+  <header class="site-header">
+    <div class="container header-inner">
+      <a class="brand" href="./" aria-label="View site" data-i18n-attr="aria-label:viewSite">
+        <span class="brand-mark"><svg class="icon"><use href="#i-trophy"/></svg></span>
+        <span class="brand-text"><strong data-i18n="brandName">THE BEST</strong><small data-i18n="dashBadge">Dashboard</small></span>
+      </a>
+      <div class="header-actions">
+        <button class="btn btn-ghost btn-sm lang-btn" type="button" id="langBtn" lang="ar" aria-label="Switch to Arabic" data-i18n-attr="aria-label:langSwitchLabel;lang:langSwitchCode">
+          <svg class="icon"><use href="#i-globe"/></svg><span data-i18n="langSwitch">العربية</span>
+        </button>
+        <a class="btn btn-ghost btn-sm view-site" href="./"><svg class="icon"><use href="#i-external"/></svg><span data-i18n="viewSite">View site</span></a>
+      </div>
+    </div>
+  </header>
+
+  <div class="pending-banner" id="pendingBanner" role="status" hidden>
+    <span class="spinner" aria-hidden="true"></span>
+    <span data-i18n="pending">Publishing your latest change. GitHub Pages usually needs about a minute, then everyone sees it.</span>
+  </div>
+
+  <main id="main" class="admin-main">
+    <div class="container">
+      <!-- Sign in with a GitHub token -->
+      <section class="card admin-card login-card" id="loginCard" aria-labelledby="loginTitle" hidden>
+        <h1 id="loginTitle" data-i18n="loginTitle">Admin sign-in</h1>
+        <p class="lede" data-i18n="loginLede">Only someone who can write to the site's GitHub repository can make changes here.</p>
+        <form id="loginForm" novalidate>
+          <div class="form-grid">
+            <label class="field"><span data-i18n="lOwner">GitHub user / org</span><input name="ghOwner" dir="ltr" autocomplete="off" spellcheck="false"></label>
+            <label class="field"><span data-i18n="lRepo">Repository</span><input name="ghRepo" dir="ltr" autocomplete="off" spellcheck="false"></label>
+            <label class="field"><span data-i18n="lBranch">Branch</span><input name="ghBranch" dir="ltr" autocomplete="off" spellcheck="false" placeholder="main"></label>
+            <label class="field"><span data-i18n="lToken">Access token</span><input name="ghToken" type="password" dir="ltr" autocomplete="off" spellcheck="false" placeholder="github_pat_…"></label>
+          </div>
+          <details class="howto">
+            <summary data-i18n="howtoSummary">How do I get a token?</summary>
+            <ol data-i18n-html="howtoSteps"></ol>
+          </details>
+          <div class="row-actions">
+            <button class="btn btn-primary" type="submit" id="loginBtn"><svg class="icon"><use href="#i-github"/></svg><span data-i18n="btnConnect">Connect</span></button>
+          </div>
+          <p class="form-status" id="loginStatus" role="status" aria-live="polite"></p>
+        </form>
+      </section>
+
+      <div id="dash" hidden>
+        <div class="dash-top">
+          <p class="dash-conn"><span class="conn-dot on" aria-hidden="true"></span><span id="connLabel"></span></p>
+          <button class="btn btn-ghost btn-sm" type="button" id="disconnectBtn"><svg class="icon"><use href="#i-logout"/></svg><span data-i18n="btnDisconnect">Disconnect</span></button>
+        </div>
+
+        <p class="callout warn" id="setupCallout" hidden>
+          <svg class="icon"><use href="#i-bell"/></svg>
+          <span><span data-i18n="calloutSetup">Sign-ups and reminders aren't set up yet.</span> <a href="#signupSection" data-i18n="calloutSetupLink">Set it up</a></span>
+        </p>
+
+        <!-- Championships -->
+        <section class="admin-section" id="champSection" aria-labelledby="champsTitle">
+          <header class="a-head">
+            <div>
+              <h2 id="champsTitle" data-i18n="champsTitle">Championships</h2>
+              <p class="lede" data-i18n="champsSub">Announce a championship, then record its winner after the final.</p>
+            </div>
+            <button class="btn btn-primary" type="button" id="newChampBtn"><svg class="icon"><use href="#i-plus"/></svg><span data-i18n="btnNewChamp">New championship</span></button>
+          </header>
+          <div class="a-list" id="champList"></div>
+        </section>
+
+        <!-- Winners -->
+        <section class="admin-section" id="winnerSection" aria-labelledby="winnersTitle">
+          <header class="a-head">
+            <div>
+              <h2 id="winnersTitle" data-i18n="winnersTitle">Winners</h2>
+              <p class="lede" data-i18n="winnersSub">eFootball winners, newest first.</p>
+            </div>
+          </header>
+          <div class="a-list" id="winnerList"></div>
+        </section>
+
+        <!-- Sign-ups & reminders -->
+        <section class="admin-section" id="signupSection" aria-labelledby="setTitle">
+          <header class="a-head">
+            <div>
+              <h2 id="setTitle" data-i18n="setTitle">Sign-ups &amp; reminders</h2>
+              <p class="lede" data-i18n="setLede">Sign-ups and email reminders run on a free Google Apps Script in your own Google account.</p>
+            </div>
+          </header>
+          <div class="card set-card">
+            <p class="set-status" id="setStatus"></p>
+            <form id="apiForm" novalidate>
+              <label class="field"><span data-i18n="lApiUrl">Web app URL</span><input name="api" type="url" dir="ltr" autocomplete="off" spellcheck="false" placeholder="https://script.google.com/macros/s/…/exec"></label>
+              <div class="row-actions">
+                <button class="btn btn-ghost btn-sm" type="button" id="apiTest"><span data-i18n="btnTestApi">Test</span></button>
+                <button class="btn btn-primary btn-sm" type="submit" id="apiSave"><span data-i18n="btnSaveApi">Save to site</span></button>
+                <button class="btn btn-ghost btn-sm danger" type="button" id="apiRemove" hidden><span data-i18n="btnRemoveApi">Turn off</span></button>
+              </div>
+              <p class="form-status" id="apiStatus" role="status" aria-live="polite"></p>
+            </form>
+            <div class="sheet-row">
+              <label class="field"><span data-i18n="lSheetUrl">Sign-ups sheet link (saved on this device)</span><input id="sheetUrl" type="url" dir="ltr" autocomplete="off" spellcheck="false" placeholder="https://docs.google.com/spreadsheets/…"></label>
+              <a class="btn btn-ghost btn-sm" id="sheetOpen" target="_blank" rel="noopener" hidden><svg class="icon"><use href="#i-external"/></svg><span data-i18n="btnOpenSheet">Open sheet</span></a>
+            </div>
+            <details class="howto" id="setupHow">
+              <summary data-i18n="setupSummary">Set it up (about 5 minutes, free)</summary>
+              <ol data-i18n-html="setupSteps"></ol>
+              <div class="row-actions">
+                <button class="btn btn-ghost btn-sm" type="button" id="copyScript"><svg class="icon"><use href="#i-copy"/></svg><span data-i18n="btnCopyScript">Copy the script</span></button>
+                <a class="btn btn-ghost btn-sm" id="scriptLink" href="tools/notifications/Code.gs" target="_blank" rel="noopener"><svg class="icon"><use href="#i-external"/></svg><span data-i18n="scriptLink">View the script</span></a>
+              </div>
+            </details>
+            <div class="callout">
+              <svg class="icon"><use href="#i-chat"/></svg>
+              <div><h3 data-i18n="waNoteTitle">About WhatsApp</h3><p data-i18n="waNote"></p></div>
+            </div>
+          </div>
+        </section>
+      </div>
+    </div>
+  </main>
+
+  <!-- New / edit championship -->
+  <dialog class="dialog" id="champDialog" aria-labelledby="champDlgTitle">
+    <form class="dialog-inner" id="champForm" novalidate>
+      <header class="dialog-head">
+        <h2 id="champDlgTitle">New championship</h2>
+        <button class="icon-btn" type="button" data-close aria-label="Close" data-i18n-attr="aria-label:close"><svg class="icon"><use href="#i-x"/></svg></button>
+      </header>
+      <div class="dialog-body">
+        <div class="form-grid">
+          <label class="field"><span><span data-i18n="lChampName">Name</span> <b aria-hidden="true">*</b></span><input name="name" required maxlength="80" dir="auto" autocomplete="off" placeholder="e.g. Friday Night Cup" data-i18n-attr="placeholder:phChampName"></label>
+          <label class="field"><span data-i18n="lChampNameAr">Name in Arabic</span><input name="nameAr" maxlength="80" dir="rtl" lang="ar" autocomplete="off"></label>
+          <label class="field"><span><span data-i18n="lChampDate">Date</span> <b aria-hidden="true">*</b></span><input name="date" type="date" required></label>
+          <label class="field"><span><span data-i18n="lChampTime">Start time</span> <b aria-hidden="true">*</b></span><input name="time" type="time" required></label>
+          <label class="field"><span data-i18n="lRemind">Reminder</span>
+            <select name="remindBefore"><option value="15">15 minutes before</option><option value="20">20 minutes before</option><option value="30" selected>30 minutes before</option></select>
+          </label>
+          <label class="field"><span><span data-i18n="lMax">Max players</span> <small data-i18n="optional">(optional)</small></span><input name="maxPlayers" type="number" min="2" max="128" step="1" inputmode="numeric"></label>
+          <label class="field span-2"><span><span data-i18n="lDetails">Details</span> <small data-i18n="optional">(optional)</small></span><textarea name="details" rows="3" maxlength="1200" dir="auto" placeholder="Format, rules, prize…" data-i18n-attr="placeholder:phDetails"></textarea></label>
+          <label class="field span-2"><span><span data-i18n="lDetailsAr">Details in Arabic</span> <small data-i18n="optional">(optional)</small></span><textarea name="detailsAr" rows="3" maxlength="1200" dir="rtl" lang="ar"></textarea></label>
+        </div>
+        <p class="hint" id="champTz"></p>
+        <p class="hint warn-hint" id="champTimeHint" data-i18n="timeChangeHint" hidden>If you change the time, signed-up players get an email with the new time.</p>
+      </div>
+      <footer class="dialog-foot">
+        <p class="form-status" id="champStatus" role="status" aria-live="polite"></p>
+        <button class="btn btn-ghost" type="button" data-close data-i18n="btnCancel">Cancel</button>
+        <button class="btn btn-primary" type="submit" id="champSave"><svg class="icon"><use href="#i-megaphone"/></svg><span>Announce</span></button>
+      </footer>
+    </form>
+  </dialog>
+
+  <!-- Record / edit winner -->
+  <dialog class="dialog" id="winnerDialog" aria-labelledby="dialogTitle">
+    <form class="dialog-inner" id="winnerForm" novalidate>
+      <header class="dialog-head">
+        <h2 id="dialogTitle">Add a new winner</h2>
+        <button class="icon-btn" type="button" data-close aria-label="Close" data-i18n-attr="aria-label:close"><svg class="icon"><use href="#i-x"/></svg></button>
+      </header>
+      <div class="dialog-body">
+        <p class="winner-champ" id="winnerChamp" hidden></p>
+        <div class="form-grid">
+          <label class="field"><span><span data-i18n="lPlayer">Champion</span> <b aria-hidden="true">*</b></span><input name="player" list="playerList" required dir="auto" autocomplete="off" placeholder="e.g. Legend Master" data-i18n-attr="placeholder:phPlayer"></label>
+          <label class="field"><span><span data-i18n="lTeam">Team</span> <b aria-hidden="true">*</b></span><input name="team" required dir="auto" autocomplete="off" placeholder="e.g. Suzhou Dongwu F.C." data-i18n-attr="placeholder:phTeam"></label>
+          <label class="field"><span data-i18n="lEvent">Tournament</span><input name="event" dir="auto" autocomplete="off" placeholder="eFootball" list="eventList"></label>
+          <label class="field"><span data-i18n="lDate">Date</span><input name="date" type="date"></label>
+          <label class="field"><span data-i18n="lRunnerUp">Runner-up</span><input name="runnerUp" list="playerList" dir="auto" autocomplete="off" placeholder="Who lost the final" data-i18n-attr="placeholder:phRunnerUp"></label>
+          <label class="field"><span data-i18n="lScore">Final score</span><input name="score" dir="ltr" autocomplete="off" placeholder="e.g. 3-1" data-i18n-attr="placeholder:phScore"></label>
+          <label class="field"><span data-i18n="lStar">Star player</span><input name="star" dir="auto" autocomplete="off" placeholder="e.g. Luis Suárez" data-i18n-attr="placeholder:phStar"></label>
+          <label class="field"><span data-i18n="lComp">Players in the tournament</span><input name="competitors" list="compList" dir="auto" autocomplete="off" placeholder="all"></label>
+          <label class="field span-2"><span><span data-i18n="lHeadline">Headline</span> <small data-i18n="lHeadlineHint">(optional, written for you if empty)</small></span><input name="headline" dir="auto" autocomplete="off" maxlength="120"></label>
+          <label class="field span-2"><span><span data-i18n="lStory">Story</span> <small data-i18n="optional">(optional)</small></span><textarea name="story" dir="auto" rows="3" maxlength="1200" placeholder="How did the final go?" data-i18n-attr="placeholder:phStory"></textarea></label>
+
+          <details class="ar-fields span-2">
+            <summary><span data-i18n="arSection">Arabic version</span> <small data-i18n="arSectionHint">(optional, shown when the site is in Arabic)</small></summary>
+            <div class="form-grid">
+              <label class="field"><span data-i18n="lTeamAr">Team in Arabic</span><input name="teamAr" dir="rtl" lang="ar" autocomplete="off"></label>
+              <label class="field"><span data-i18n="lEventAr">Tournament in Arabic</span><input name="eventAr" dir="rtl" lang="ar" autocomplete="off"></label>
+              <label class="field"><span data-i18n="lStarAr">Star player in Arabic</span><input name="starAr" dir="rtl" lang="ar" autocomplete="off"></label>
+              <label class="field span-2"><span data-i18n="lHeadlineAr">Headline in Arabic</span><input name="headlineAr" dir="rtl" lang="ar" autocomplete="off" maxlength="120"></label>
+              <label class="field span-2"><span data-i18n="lStoryAr">Story in Arabic</span><textarea name="storyAr" dir="rtl" lang="ar" rows="3" maxlength="1200"></textarea></label>
+            </div>
+          </details>
+
+          <div class="field upload span-2">
+            <span><span data-i18n="lWinImg">Win image</span> <small data-i18n="lWinImgHint">(screenshot or photo of the win)</small></span>
+            <div class="upload-row">
+              <div class="upload-preview" id="winPreview"><svg class="icon"><use href="#i-image"/></svg></div>
+              <div class="upload-actions">
+                <input type="file" name="winFile" id="winFile" accept="image/*">
+                <label class="check" hidden id="winRemoveWrap"><input type="checkbox" name="removeWin"> <span data-i18n="lRemoveImg">Remove current image</span></label>
+              </div>
+            </div>
+          </div>
+          <div class="field upload span-2">
+            <span><span data-i18n="lCover">Background photo</span> <small data-i18n="lCoverHint">(shown behind the win image, e.g. your star player)</small></span>
+            <div class="upload-row">
+              <div class="upload-preview" id="coverPreview"><svg class="icon"><use href="#i-image"/></svg></div>
+              <div class="upload-actions">
+                <input type="file" name="coverFile" id="coverFile" accept="image/*">
+                <label class="check" hidden id="coverRemoveWrap"><input type="checkbox" name="removeCover"> <span data-i18n="lRemoveCover">Remove current photo</span></label>
+              </div>
+            </div>
+          </div>
+          <label class="field span-2"><span><span data-i18n="lCoverCredit">Background photo credit</span> <small data-i18n="lCoverCreditHint">(optional, e.g. photographer and license)</small></span><input name="coverCredit" dir="auto" autocomplete="off"></label>
+        </div>
+        <p class="hint" data-i18n="imgHint">Images are resized on your device before upload, which also strips location data from phone photos.</p>
+      </div>
+      <footer class="dialog-foot">
+        <p class="form-status" id="formStatus" role="status" aria-live="polite"></p>
+        <button class="btn btn-ghost" type="button" data-close data-i18n="btnCancel">Cancel</button>
+        <button class="btn btn-primary" type="submit" id="publishBtn"><svg class="icon"><use href="#i-trophy"/></svg><span>Publish</span></button>
+      </footer>
+    </form>
+  </dialog>
+
+  <datalist id="playerList"></datalist>
+  <datalist id="eventList"><option value="eFootball"></option></datalist>
+  <datalist id="compList"><option value="all"></option><option value="LM&amp;Moo"></option><option value="Lm &amp; Moo &amp; Lava"></option></datalist>
+
+  <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+</body>
+</html>
