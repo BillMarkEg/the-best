@@ -1,11 +1,11 @@
 /* Upcoming championships on the public site: announcement cards with a live countdown,
    sign-up with an email or WhatsApp number (through the Google Apps Script service in
    data/config.json), cancelling a place, add-to-calendar and share on WhatsApp. */
-import { t, tp, getLang, fmtDateTime, fmtRelative, tzName, iso } from "./i18n.js?v=20261123002532";
+import { t, tp, getLang, fmtDateTime, fmtRelative, tzName, iso } from "./i18n.js?v=20261123002647";
 import {
   $, $$, esc, icon, fmt, avatar, showPlayer, champStatus, champName, champDetails, remindMinutes,
   fetchSignups, postSignup, normalizePhone, validEmail, toast, confirmBox,
-} from "./core.js?v=20261123002532";
+} from "./core.js?v=20261123002647";
 
 const LS_MEMBER = "thebest.member";   // this visitor's name / email / number, to fill the form next time
 const LS_SIGNUPS = "thebest.signups"; // { [championshipId]: { token, nickname, channel } } signed up from this browser

@@ -1,11 +1,11 @@
 /* The winner form on the admin dashboard: record a championship's winner, or edit / delete a winner.
    One commit per change: the images, data/efootball.json and (when linked) data/championships.json. */
-import { t, fmtDateTime } from "./i18n.js?v=20261123002532";
+import { t, fmtDateTime } from "./i18n.js?v=20261123002647";
 import {
   $, slug, readGithubConfig, registerLocalImage, toast, confirmBox, showPlayer, showTeam, champName, store,
   DATA_EF, DATA_CHAMPS,
-} from "./core.js?v=20261123002532";
-import { commitData, compressImage } from "./github.js?v=20261123002532";
+} from "./core.js?v=20261123002647";
+import { commitData, compressImage } from "./github.js?v=20261123002647";
 
 const IMG_DIR = "assets/img/news";
 const FIELDS = ["player", "team", "event", "date", "runnerUp", "score", "star", "competitors", "headline", "story", "coverCredit"];

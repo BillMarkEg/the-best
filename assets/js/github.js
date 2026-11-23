@@ -2,7 +2,7 @@
    repository with the GitHub REST API, one commit per change (images + data files).
    GitHub Pages then redeploys the site, usually within a minute.
    The access token is stored in this browser only (localStorage). */
-import { t } from "./i18n.js?v=20261123002532";
+import { t } from "./i18n.js?v=20261123002647";
 
 const MAX_IMAGE_SIDE = 1600;
 

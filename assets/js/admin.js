@@ -3,16 +3,16 @@
    commit, made from this browser (see github.js). Here the admin announces championships,
    records each championship's winner, edits or deletes winners, and connects the free
    Google Apps Script service that handles sign-ups and reminders (tools/notifications/Code.gs). */
-import { t, tp, setLang, isArabic, applyStatic, fmtDateTime, fmtDate, tzName, iso } from "./i18n.js?v=20261123002532";
+import { t, tp, setLang, isArabic, applyStatic, fmtDateTime, fmtDate, tzName, iso } from "./i18n.js?v=20261123002647";
 import {
   $, $$, esc, icon, fmt, avatar, assignColors, showPlayer, showTeam, showEvent, slug,
   getJSON, getOptionalJSON, loadArabicNames, normalizeEf, normalizeChamps, normalizeConfig,
   DATA_PES, DATA_EF, DATA_CHAMPS, DATA_CONFIG, newerPending, hasPending, savePending, watchPending,
   readGithubConfig, saveGithubConfig, toast, initImageFallback, confirmBox,
   champStatus, champName, remindMinutes, fetchSignups, isSignupUrl,
-} from "./core.js?v=20261123002532";
-import { checkConnection, commitData } from "./github.js?v=20261123002532";
-import { initWinnerForm, openWinnerForm, removeWinner } from "./winner-form.js?v=20261123002532";
+} from "./core.js?v=20261123002647";
+import { checkConnection, commitData } from "./github.js?v=20261123002647";
+import { initWinnerForm, openWinnerForm, removeWinner } from "./winner-form.js?v=20261123002647";
 
 const LS_SHEET = "thebest.sheetUrl";
 const SCRIPT_PATH = "tools/notifications/Code.gs";

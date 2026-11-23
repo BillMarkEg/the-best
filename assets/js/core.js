@@ -1,7 +1,7 @@
 /* Shared by the public site (app.js, announce.js) and the admin dashboard (admin.js).
    Keep the ?v= tags identical in every file (tools/bump_version.py does it), so all pages
    load one copy of each module. */
-import { t, isArabic, fmtNum } from "./i18n.js?v=20261123002532";
+import { t, isArabic, fmtNum } from "./i18n.js?v=20261123002647";
 
 export const DATA_PES = "data/pes_history.json";
 export const DATA_EF = "data/efootball.json";
