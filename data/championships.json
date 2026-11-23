@@ -1,4 +1,16 @@
 {
-  "updatedAt": "2026-11-18T00:00:00.000Z",
-  "championships": []
+  "updatedAt": "2026-11-23T00:34:02.323Z",
+  "championships": [
+    {
+      "id": "looking-for-emadeldin-to-join-us-mwsj98qd",
+      "name": "Looking for EmadEldin to join us",
+      "nameAr": "بطولة البحث عن عمداني",
+      "startsAt": "2026-11-23T00:31:00.000Z",
+      "remindBefore": 15,
+      "maxPlayers": 3,
+      "details": "هل يظهر عمداني في سجل الأبطال",
+      "detailsAr": "Is it possible for Omdany to be featured on the champions list",
+      "createdAt": "2026-11-23T00:34:02.749Z"
+    }
+  ]
 }
