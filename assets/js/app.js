@@ -8,14 +8,14 @@
 
 // Keep the ?v= tags identical in every file (tools/bump_version.py does it),
 // so every page loads the same version of each module.
-import { t, tp, isArabic, setLang, applyStatic, fmtDate, listJoin, iso } from "./i18n.js?v=20261118102123";
+import { t, tp, isArabic, setLang, applyStatic, fmtDate, listJoin, iso } from "./i18n.js?v=20261123002532";
 import {
   store, $, esc, bdi, icon, fmt, pct, safeUrl, teamName, arName, eventName, showPlayer, showTeam, showEvent, showStar, prettyComp,
   avatar, colorOf, img, NEUTRAL, FIXED_SLOTS, assignColors, getJSON, getOptionalJSON, loadArabicNames,
   normalizeEf, normalizeChamps, normalizeConfig, DATA_PES, DATA_EF, DATA_CHAMPS, DATA_CONFIG,
   newerPending, hasPending, watchPending, toast, initImageFallback,
-} from "./core.js?v=20261118102123";
-import { initAnnouncements, renderAnnouncements } from "./announce.js?v=20261118102123";
+} from "./core.js?v=20261123002532";
+import { initAnnouncements, renderAnnouncements } from "./announce.js?v=20261123002532";
 
 export const state = {
   pes: [],

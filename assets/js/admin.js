@@ -3,16 +3,16 @@
    commit, made from this browser (see github.js). Here the admin announces championships,
    records each championship's winner, edits or deletes winners, and connects the free
    Google Apps Script service that handles sign-ups and reminders (tools/notifications/Code.gs). */
-import { t, tp, setLang, isArabic, applyStatic, fmtDateTime, fmtDate, tzName, iso } from "./i18n.js?v=20261118102123";
+import { t, tp, setLang, isArabic, applyStatic, fmtDateTime, fmtDate, tzName, iso } from "./i18n.js?v=20261123002532";
 import {
   $, $$, esc, icon, fmt, avatar, assignColors, showPlayer, showTeam, showEvent, slug,
   getJSON, getOptionalJSON, loadArabicNames, normalizeEf, normalizeChamps, normalizeConfig,
   DATA_PES, DATA_EF, DATA_CHAMPS, DATA_CONFIG, newerPending, hasPending, savePending, watchPending,
   readGithubConfig, saveGithubConfig, toast, initImageFallback, confirmBox,
   champStatus, champName, remindMinutes, fetchSignups, isSignupUrl,
-} from "./core.js?v=20261118102123";
-import { checkConnection, commitData } from "./github.js?v=20261118102123";
-import { initWinnerForm, openWinnerForm, removeWinner } from "./winner-form.js?v=20261118102123";
+} from "./core.js?v=20261123002532";
+import { checkConnection, commitData } from "./github.js?v=20261123002532";
+import { initWinnerForm, openWinnerForm, removeWinner } from "./winner-form.js?v=20261123002532";
 
 const LS_SHEET = "thebest.sheetUrl";
 const SCRIPT_PATH = "tools/notifications/Code.gs";
@@ -173,8 +173,12 @@ async function connect(cfg) {
   setLoginStatus(t("stConnecting"));
   $("#loginBtn").disabled = true;
   try {
-    const { repo, canWrite } = await checkConnection(cfg, DATA_EF);
-    if (!canWrite) throw new Error(t("stNoPush", { repo }));
+    const { repo, canWrite, reason } = await checkConnection(cfg, DATA_EF);
+    if (!canWrite) {
+      // Open "How do I get a token?" so the fix is right there.
+      if (reason === "token") $("#loginForm .howto").open = true;
+      throw new Error(reason === "token" ? t("errReadOnly", { repo: cfg.repo }) : t("stNoPush", { repo }));
+    }
     state.connected = true;
     state.repo = repo;
     setLoginStatus("");

@@ -2,7 +2,7 @@
    repository with the GitHub REST API, one commit per change (images + data files).
    GitHub Pages then redeploys the site, usually within a minute.
    The access token is stored in this browser only (localStorage). */
-import { t } from "./i18n.js?v=20261118102123";
+import { t } from "./i18n.js?v=20261123002532";
 
 const MAX_IMAGE_SIDE = 1600;
 
@@ -36,12 +36,25 @@ export async function gh(cfg, method, path, body) {
   throw err;
 }
 
-/** Checks the token: returns { repo: "owner/name", canWrite }. Throws a translated error. */
+/**
+ * Checks the token: returns { repo: "owner/name", canWrite, reason }. Throws a translated error.
+ * reason is "account" when the GitHub account can't push, "token" when the token itself is read-only.
+ */
 export async function checkConnection(cfg, dataPath) {
   const repo = await gh(cfg, "GET", "");
   await gh(cfg, "GET", `/git/ref/heads/${branchPath(cfg)}`);
   await gh(cfg, "GET", `/contents/${dataPath}?ref=${encodeURIComponent(cfg.branch)}`);
-  return { repo: repo.full_name, canWrite: repo.permissions ? repo.permissions.push !== false : true };
+  if (repo.permissions && repo.permissions.push === false) return { repo: repo.full_name, canWrite: false, reason: "account" };
+  // repo.permissions describes the account, not the token: a fine-grained token can still be read-only.
+  // Saving a blob is a harmless write (no commit, no branch change; the same text always makes the same blob)
+  // that fails when the token lacks "Contents: Read and write".
+  try {
+    await gh(cfg, "POST", "/git/blobs", { content: "The Best dashboard: write check\n", encoding: "utf-8" });
+  } catch (err) {
+    if (err.status === 403 || err.status === 404) return { repo: repo.full_name, canWrite: false, reason: "token" };
+    throw err;
+  }
+  return { repo: repo.full_name, canWrite: true, reason: "" };
 }
 
 /* ---------------- encoding helpers ---------------- */
